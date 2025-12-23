@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,24 +23,29 @@ export function UserProfileSidebar() {
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
 
-  const [user, setUser] = React.useState<{
+  const [user, setUser] = useState<{
     firstName: string;
     lastName: string;
     email: string;
   } | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData.user;
+      if (!authUser) return;
 
-      if (!user) return;
+      // Lire firstName / lastName depuis profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", authUser.id)
+        .single();
 
       setUser({
-        firstName: user.user_metadata?.firstName ?? "User",
-        lastName: user.user_metadata?.lastName ?? "",
-        email: user.email ?? "",
+        firstName: profileData?.first_name ?? "User",
+        lastName: profileData?.last_name ?? "",
+        email: authUser.email ?? "",
       });
     };
 

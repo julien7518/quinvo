@@ -27,13 +27,22 @@ export function ProfileForm() {
       const user = data.user;
       if (!user) return;
 
-      const loadedEmail = user.email ?? "";
-      const loadedFirstName = user.user_metadata.firstName ?? "";
-      const loadedLastName = user.user_metadata.lastName ?? "";
+      const userId = user.id; // ID du user courant
 
-      setInitialEmail(loadedEmail);
-      setInitialFirstName(loadedFirstName);
-      setInitialLastName(loadedLastName);
+      // 1️⃣ Charger l'email depuis auth
+      setInitialEmail(user.email ?? "");
+
+      // 2️⃣ Charger le firstName / lastName depuis profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", userId) // <- essentiel pour RLS
+        .single();
+
+      if (profileError) return;
+
+      setInitialFirstName(profileData?.first_name ?? "");
+      setInitialLastName(profileData?.last_name ?? "");
     };
 
     loadUser();
@@ -46,15 +55,30 @@ export function ProfileForm() {
     setSuccess(false);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        email: email || initialEmail,
-        data: {
-          firstName: firstName || initialFirstName,
-          lastName: lastName || initialLastName,
-        },
-      });
-      if (error) throw error;
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("User not found");
+
+      // 1️⃣ Mettre à jour email dans auth si changé
+      if (email && email !== initialEmail) {
+        const { error } = await supabase.auth.updateUser({ email });
+        if (error) throw error;
+      }
+
+      // 2️⃣ Mettre à jour firstName / lastName dans profiles
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+        })
+        .eq("id", userId); // <- important pour RLS et WHERE clause
+      if (profileError) throw profileError;
+
       setSuccess(true);
+      setInitialEmail(email);
+      setInitialFirstName(firstName);
+      setInitialLastName(lastName);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

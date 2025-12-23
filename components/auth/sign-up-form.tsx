@@ -20,8 +20,6 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -47,10 +45,6 @@ export function SignUpForm({
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            firstName: firstName,
-            lastName: lastName,
-          },
         },
       });
       if (error) throw error;
@@ -72,36 +66,12 @@ export function SignUpForm({
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="flex flex-col gap-6">
-              <div className="flex flex-row gap-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="firstName">First name</Label>
-                  <Input
-                    id="firstName"
-                    type="firstName"
-                    placeholder="Jean"
-                    required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="lastName">Last name</Label>
-                  <Input
-                    id="lastName"
-                    type="lastName"
-                    placeholder="Dupont"
-                    required
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                  />
-                </div>
-              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="my@email.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -114,6 +84,7 @@ export function SignUpForm({
                 <Input
                   id="password"
                   type="password"
+                  placeholder="StrongPassword123!"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -126,6 +97,7 @@ export function SignUpForm({
                 <Input
                   id="repeat-password"
                   type="password"
+                  placeholder="StrongPassword123!"
                   required
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}

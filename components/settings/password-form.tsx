@@ -54,7 +54,7 @@ export function PasswordForm() {
           <Input
             className="mt-1"
             type="password"
-            value=""
+            value={password}
             placeholder="YourNewPassword123!"
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -65,7 +65,7 @@ export function PasswordForm() {
           <Input
             className="mt-1"
             type="password"
-            value=""
+            value={confirm}
             placeholder="YourNewPassword123!"
             onChange={(e) => setConfirm(e.target.value)}
           />

@@ -15,6 +15,25 @@ import { Button } from "@/components/ui/button";
 
 type UrssafMode = "monthly" | "quarterly";
 
+function formatSiret(value: string): string {
+  // Garde uniquement les chiffres
+  let digits = value.replace(/\D/g, "");
+
+  // Limite à 15 chiffres
+  digits = digits.slice(0, 14);
+
+  // Ajoute des espaces aux positions 3, 6 et 9
+  let formatted = "";
+  for (let i = 0; i < digits.length; i++) {
+    if (i === 3 || i === 6 || i === 9) {
+      formatted += " ";
+    }
+    formatted += digits[i];
+  }
+
+  return formatted;
+}
+
 function formatFrenchPhone(value: string) {
   let digits = value.replace(/\D/g, "");
 
@@ -38,43 +57,67 @@ export function BusinessForm() {
   const [siret, setSiret] = useState("");
   const [address, setAddress] = useState("");
 
+  const [initialPhoneNumber, setInitialPhoneNumber] = useState("");
+  const [initialSiret, setInitialSiret] = useState("");
+  const [initialAddress, setInitialAddress] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     const loadBusinessInfo = async () => {
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const meta = user.user_metadata ?? {};
+      const userId = user.id;
 
-      setUrssafMode(meta.urssafMode ?? "monthly");
-      setSiret(meta.siret ?? "");
-      setAddress(meta.address ?? "");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("declaration_mode, siret, phone, address")
+        .eq("id", userId)
+        .single();
+
+      if (error) return;
+
+      setUrssafMode(data.declaration_mode ?? "monthly");
+      setInitialSiret(data.siret ?? "");
+      setInitialPhoneNumber(data.phone ?? "");
+      setInitialAddress(data.address ?? "");
     };
 
     loadBusinessInfo();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // empêche le reload de page
     setLoading(true);
     setError(null);
-    setSuccess(false);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          urssafMode,
-          siret,
-          address,
-        },
-      });
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("User not found");
 
-      if (error) throw error;
-      setSuccess(true);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          declaration_mode: urssafMode,
+          siret,
+          phone: phoneNumber,
+          address,
+        })
+        .eq("id", userId); // si tu as besoin de RLS
+
+      setLoading(false);
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccess(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -116,9 +159,18 @@ export function BusinessForm() {
           <Label>SIRET</Label>
           <Input
             className="mt-1"
-            placeholder="123 456 789 00012"
-            value={siret}
-            onChange={(e) => setSiret(e.target.value)}
+            placeholder={formatSiret(initialSiret)}
+            value={formatSiret(siret)}
+            onChange={(e) => {
+              // Supprime tous les caractères non numériques
+              let raw = e.target.value.replace(/\D/g, "");
+
+              // Limite à 15 chiffres
+              raw = raw.slice(0, 15);
+
+              // Met à jour l'état avec la valeur brute (sans espaces)
+              setSiret(raw);
+            }}
           />
         </div>
 
@@ -135,7 +187,7 @@ export function BusinessForm() {
             {/* Faux placeholder (reste du numéro) */}
             {phoneNumber.length === 0 && (
               <div className="pointer-events-none absolute left-[5.4rem] top-1/2 -translate-y-[48%] text-sm text-muted-foreground">
-                6 12 34 56 78
+                {formatFrenchPhone(initialPhoneNumber)}
               </div>
             )}
 
@@ -167,7 +219,7 @@ export function BusinessForm() {
           <Label>Business address</Label>
           <Input
             className="mt-1"
-            placeholder="12 rue de Paris, 75000 Paris, France"
+            placeholder={initialAddress}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
           />
