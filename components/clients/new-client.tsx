@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface NewClientProps {
-  onClientAdded?: () => void; // callback pour refresh la table
+  onClientAdded?: () => void;
 }
 
 export function NewClient({ onClientAdded }: NewClientProps) {
@@ -24,14 +26,32 @@ export function NewClient({ onClientAdded }: NewClientProps) {
   const [newCompany, setNewCompany] = useState("");
   const [newSiret, setNewSiret] = useState("");
   const [newAddress, setNewAddress] = useState("");
-  const [newEmails, setNewEmails] = useState(""); // emails séparés par virgules
+  const [emailInput, setEmailInput] = useState("");
+  const [emails, setEmails] = useState<string[]>([]);
+
+  const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    if (value.endsWith(" ")) {
+      const email = value.slice(0, -1).trim();
+      if (email && !emails.includes(email)) {
+        setEmails([...emails, email]);
+      }
+      setEmailInput("");
+    } else {
+      setEmailInput(value);
+    }
+  };
+
+  const removeEmail = (emailToRemove: string) => {
+    setEmails(emails.filter((email) => email !== emailToRemove));
+  };
 
   const handleSave = async () => {
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
     if (!userId) throw new Error("User not found");
 
-    // Ajouter le client
     const { data: clientData, error: clientError } = await supabase
       .from("clients")
       .insert({
@@ -48,14 +68,9 @@ export function NewClient({ onClientAdded }: NewClientProps) {
       return;
     }
 
-    // Ajouter les emails
-    const emailsArray = newEmails
-      .split(",")
-      .map((e) => e.trim())
-      .filter(Boolean);
-    if (emailsArray.length > 0) {
+    if (emails.length > 0) {
       const { error: emailError } = await supabase.from("client_emails").insert(
-        emailsArray.map((email) => ({
+        emails.map((email) => ({
           client_id: clientData.id,
           email,
         }))
@@ -63,13 +78,12 @@ export function NewClient({ onClientAdded }: NewClientProps) {
       if (emailError) console.error(emailError);
     }
 
-    // Reset form
     setNewCompany("");
     setNewSiret("");
     setNewAddress("");
-    setNewEmails("");
+    setEmailInput("");
+    setEmails([]);
 
-    // callback pour rafraîchir la table
     if (onClientAdded) onClientAdded();
   };
 
@@ -105,11 +119,23 @@ export function NewClient({ onClientAdded }: NewClientProps) {
             />
           </div>
           <div>
-            <Label>Emails (séparés par des virgules)</Label>
+            <Label>Emails</Label>
             <Input
-              value={newEmails}
-              onChange={(e) => setNewEmails(e.target.value)}
+              value={emailInput}
+              onChange={handleEmailInput}
+              placeholder="Write an email and press space"
             />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {emails.map((email) => (
+                <Badge key={email} variant="secondary" className="gap-1">
+                  {email}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => removeEmail(email)}
+                  />
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
         <DialogFooter>

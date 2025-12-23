@@ -32,49 +32,48 @@ export function ClientTable() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [refreshFlag, setRefreshFlag] = useState(0);
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      setLoading(true);
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId) throw new Error("User not found");
+  const fetchClients = async () => {
+    setLoading(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error("User not found");
 
-      if (!userId) return;
+    if (!userId) return;
 
-      const { data, error } = await supabase
-        .from("clients")
-        .select(
-          `
+    const { data, error } = await supabase
+      .from("clients")
+      .select(
+        `
           id,
           company_name,
           siret,
           address,
           client_emails(email)
         `
-        )
-        .eq("user_id", userId);
+      )
+      .eq("user_id", userId);
 
-      if (error) {
-        console.error(error);
-        setLoading(false);
-        return;
-      }
-
-      const formattedClients: Client[] = (data || []).map((c: any) => ({
-        id: c.id,
-        company_name: c.company_name,
-        siret: c.siret,
-        address: c.address || "",
-        emails: c.client_emails.map((e: any) => e.email),
-      }));
-
-      setClients(formattedClients);
+    if (error) {
+      console.error(error);
       setLoading(false);
-      console.log(data);
-    };
+      return;
+    }
 
+    const formattedClients: Client[] = (data || []).map((c: any) => ({
+      id: c.id,
+      company_name: c.company_name,
+      siret: c.siret,
+      address: c.address || "",
+      emails: c.client_emails.map((e: any) => e.email),
+    }));
+
+    setClients(formattedClients);
+    setLoading(false);
+    console.log(data);
+  };
+
+  useEffect(() => {
     fetchClients();
   }, []);
 
@@ -92,7 +91,7 @@ export function ClientTable() {
   return (
     <div>
       <div className="flex flex-row justify-between mb-8">
-        <NewClient onClientAdded={() => setRefreshFlag((prev) => prev + 1)} />
+        <NewClient onClientAdded={fetchClients} />
 
         <InputGroup className="max-w-2xl">
           <InputGroupInput
