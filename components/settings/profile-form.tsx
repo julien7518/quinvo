@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,11 @@ export function ProfileForm() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+
+  const [initialFirstName, setInitialFirstName] = useState("");
+  const [initialLastName, setInitialLastName] = useState("");
+  const [initialEmail, setInitialEmail] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -23,9 +27,13 @@ export function ProfileForm() {
       const user = data.user;
       if (!user) return;
 
-      setEmail(user.email ?? "");
-      setFirstName(user.user_metadata.firstName ?? "");
-      setLastName(user.user_metadata.lastName ?? "");
+      const loadedEmail = user.email ?? "";
+      const loadedFirstName = user.user_metadata.firstName ?? "";
+      const loadedLastName = user.user_metadata.lastName ?? "";
+
+      setInitialEmail(loadedEmail);
+      setInitialFirstName(loadedFirstName);
+      setInitialLastName(loadedLastName);
     };
 
     loadUser();
@@ -39,10 +47,10 @@ export function ProfileForm() {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        email,
+        email: email || initialEmail,
         data: {
-          firstName,
-          lastName,
+          firstName: firstName || initialFirstName,
+          lastName: lastName || initialLastName,
         },
       });
       if (error) throw error;
@@ -55,50 +63,57 @@ export function ProfileForm() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Personal information</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSave} className="space-y-6 max-w-xl">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>First name</Label>
-              <Input
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Last name</Label>
-              <Input
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </div>
-          </div>
-
+    <div className="flex justify-between">
+      <div className="w-64 flex-shrink-0">
+        <h2 className="text-lg font-medium">Personal information</h2>
+        <p className="text-sm text-muted-foreground">
+          Manage your personal information.
+        </p>
+      </div>
+      <form onSubmit={handleSave} className="space-y-6 max-w-xl flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label>Email</Label>
+            <Label>First name</Label>
             <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1"
+              value={firstName}
+              placeholder={initialFirstName}
+              onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          {success && (
-            <p className="text-sm text-green-600">Saved successfully</p>
-          )}
-
-          <div className="flex justify-end">
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Save changes"}
-            </Button>
+          <div>
+            <Label>Last name</Label>
+            <Input
+              className="mt-1"
+              value={lastName}
+              placeholder={initialLastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+
+        <div>
+          <Label>Email</Label>
+          <Input
+            className="mt-1"
+            type="email"
+            value={email}
+            placeholder={initialEmail}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        {success && (
+          <p className="text-sm text-green-600">Saved successfully</p>
+        )}
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={loading}>
+            {loading ? "Saving..." : "Save changes"}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

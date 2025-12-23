@@ -3,7 +3,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 
 export default function DashboardPage() {
   return (
-    <AppShell>
+    <AppShell pageName="Overview">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <KpiCard title="Chiffre d'affaires" value="4 250 €" />
         <KpiCard title="À déclarer (URSSAF)" value="3 980 €" />
