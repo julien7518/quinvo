@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { formatSiret, parseSiret } from "@/lib/format";
 import {
   Select,
   SelectTrigger,
@@ -14,25 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 
 type UrssafMode = "monthly" | "quarterly";
-
-function formatSiret(value: string): string {
-  // Garde uniquement les chiffres
-  let digits = value.replace(/\D/g, "");
-
-  // Limite à 15 chiffres
-  digits = digits.slice(0, 14);
-
-  // Ajoute des espaces aux positions 3, 6 et 9
-  let formatted = "";
-  for (let i = 0; i < digits.length; i++) {
-    if (i === 3 || i === 6 || i === 9) {
-      formatted += " ";
-    }
-    formatted += digits[i];
-  }
-
-  return formatted;
-}
 
 function formatFrenchPhone(value: string) {
   let digits = value.replace(/\D/g, "");
@@ -162,14 +144,7 @@ export function BusinessForm() {
             placeholder={formatSiret(initialSiret)}
             value={formatSiret(siret)}
             onChange={(e) => {
-              // Supprime tous les caractères non numériques
-              let raw = e.target.value.replace(/\D/g, "");
-
-              // Limite à 15 chiffres
-              raw = raw.slice(0, 15);
-
-              // Met à jour l'état avec la valeur brute (sans espaces)
-              setSiret(raw);
+              setSiret(parseSiret(e.target.value));
             }}
           />
         </div>

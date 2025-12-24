@@ -18,13 +18,16 @@ import {
   InputGroupInput,
 } from "../ui/input-group";
 import { NewClient } from "./new-client";
+import { formatSiret } from "@/lib/format";
 
 interface Client {
   id: string;
   company_name: string;
   siret: string;
-  address: string;
+  address?: string;
   emails: string[];
+  phones: string[];
+  notes: string;
 }
 
 export function ClientTable() {
@@ -49,7 +52,9 @@ export function ClientTable() {
           company_name,
           siret,
           address,
-          client_emails(email)
+          client_emails(email),
+          client_phones(phone),
+          notes
         `
       )
       .eq("user_id", userId);
@@ -64,13 +69,14 @@ export function ClientTable() {
       id: c.id,
       company_name: c.company_name,
       siret: c.siret,
-      address: c.address || "",
+      address: c.address,
       emails: c.client_emails.map((e: any) => e.email),
+      phones: c.client_phones.map((e: any) => e.phone),
+      notes: c.notes || "",
     }));
 
     setClients(formattedClients);
     setLoading(false);
-    console.log(data);
   };
 
   useEffect(() => {
@@ -122,7 +128,7 @@ export function ClientTable() {
             <TableRow key={client.id}>
               <TableCell>{client.company_name}</TableCell>
               <TableCell>{client.emails.join(", ")}</TableCell>
-              <TableCell>{client.siret}</TableCell>
+              <TableCell>{formatSiret(client.siret)}</TableCell>
               <TableCell>
                 <ClientSheet client={client} />
               </TableCell>
