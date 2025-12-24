@@ -12,20 +12,33 @@ import {
   SheetFooter,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import {
-  formatSiret,
   isValidEmail,
   isValidPhone,
-  parseSiret,
   parsePhone,
   formatPhone,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SiretInput } from "../siret-input";
+import { CompanyNameInput } from "../company-input";
+import { AddressInput } from "../address-input";
+import { useInputValidation } from "@/hook/useInputValidation";
 
 interface Client {
   id: string;
@@ -39,9 +52,15 @@ interface Client {
 
 interface ClientSheetProps {
   client: Client;
+  onClientDeleted: () => void;
+  onClientUpdated?: () => void;
 }
 
-export function ClientSheet({ client }: ClientSheetProps) {
+export function ClientSheet({
+  client,
+  onClientDeleted,
+  onClientUpdated,
+}: ClientSheetProps) {
   const supabase = createClient();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -50,11 +69,8 @@ export function ClientSheet({ client }: ClientSheetProps) {
   const [isEmailValid, setIsEmailValid] = useState(true);
   const [phoneInput, setPhoneInput] = useState("");
   const [isPhoneValid, setIsPhoneValid] = useState(true);
-  const [errors, setErrors] = useState<{
-    company?: string;
-    siret?: string;
-    address?: string;
-  }>({});
+  const [hasBeenUpdated, setHasBeenUpdated] = useState(false);
+  const { errors, validateClientForm, setErrors } = useInputValidation();
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -70,33 +86,105 @@ export function ClientSheet({ client }: ClientSheetProps) {
     setIsEditing(false);
   };
 
-  const validateForm = () => {
-    const newErrors: typeof errors = {};
+  const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
 
-    if (!formData.company_name.trim()) {
-      newErrors.company = "Company name is required";
+    if (value.endsWith(" ")) {
+      const email = value.slice(0, -1).trim().toLowerCase();
+
+      if (!email) return;
+
+      if (!isValidEmail(email)) {
+        setEmailInput(email);
+        setIsEmailValid(false);
+        return;
+      }
+
+      if (!formData.emails.includes(email)) {
+        setFormData({ ...formData, emails: [...formData.emails, email] });
+      }
+
+      setEmailInput("");
+      setIsEmailValid(true);
+    } else {
+      setEmailInput(value.toLowerCase());
+      setIsEmailValid(true);
+    }
+  };
+
+  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    if (value.endsWith(" ")) {
+      const raw = parsePhone(value);
+
+      if (!raw) return;
+
+      if (!isValidPhone(raw)) {
+        setPhoneInput(raw);
+        setIsPhoneValid(false);
+        return;
+      }
+
+      if (!formData.phones.includes(raw)) {
+        setFormData({ ...formData, phones: [...formData.phones, raw] });
+      }
+
+      setPhoneInput("");
+      setIsPhoneValid(true);
+    } else {
+      setPhoneInput(parsePhone(value));
+      setIsPhoneValid(true);
+    }
+  };
+
+  const removeEmail = (emailToRemove: string) => {
+    setFormData({
+      ...formData,
+      emails: formData.emails.filter((email) => email !== emailToRemove),
+    });
+  };
+
+  const removePhone = (phoneToRemove: string) => {
+    setFormData({
+      ...formData,
+      phones: formData.phones.filter((p) => p !== phoneToRemove),
+    });
+  };
+
+  const handleDeleteClient = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error("User not found");
+
+    const { error } = await supabase
+      .from("clients")
+      .delete()
+      .eq("id", client.id);
+
+    if (error) {
+      console.error(error);
+      return;
     }
 
-    if (formData.siret.length !== 14) {
-      newErrors.siret = "SIRET must contain exactly 14 digits";
-    }
-
-    if (!formData.address?.trim()) {
-      newErrors.address = "Address is required";
-    }
-
-    setErrors(newErrors);
-
-    return Object.keys(newErrors).length === 0;
+    onClientDeleted?.();
   };
 
   const handleSave = async () => {
-    if (!validateForm()) return;
+    if (
+      !validateClientForm({
+        company: formData.company_name,
+        siret: formData.siret,
+        address: formData.address,
+      })
+    )
+      return;
 
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
     if (!userId) throw new Error("User not found");
 
+    // Mise à jour des infos du client
     const { data: clientData, error: clientError } = await supabase
       .from("clients")
       .update({
@@ -114,11 +202,70 @@ export function ClientSheet({ client }: ClientSheetProps) {
       console.error(clientError);
       return;
     }
+
+    // Gestion des emails
+    const emailsToDelete = client.emails.filter(
+      (email) => !formData.emails.includes(email)
+    );
+    const emailsToAdd = formData.emails.filter(
+      (email) => !client.emails.includes(email)
+    );
+
+    if (emailsToDelete.length > 0) {
+      await supabase
+        .from("client_emails")
+        .delete()
+        .eq("client_id", client.id)
+        .in("email", emailsToDelete);
+    }
+
+    if (emailsToAdd.length > 0) {
+      await supabase.from("client_emails").insert(
+        emailsToAdd.map((email) => ({
+          client_id: client.id,
+          email,
+        }))
+      );
+    }
+
+    // Gestion des phones
+    const phonesToDelete = client.phones.filter(
+      (phone) => !formData.phones.includes(phone)
+    );
+    const phonesToAdd = formData.phones.filter(
+      (phone) => !client.phones.includes(phone)
+    );
+
+    if (phonesToDelete.length > 0) {
+      await supabase
+        .from("client_phones")
+        .delete()
+        .eq("client_id", client.id)
+        .in("phone", phonesToDelete);
+    }
+
+    if (phonesToAdd.length > 0) {
+      await supabase.from("client_phones").insert(
+        phonesToAdd.map((phone) => ({
+          client_id: client.id,
+          phone,
+        }))
+      );
+    }
+
     setIsEditing(false);
+    setHasBeenUpdated(true);
   };
 
   return (
-    <Sheet>
+    <Sheet
+      onOpenChange={(open) => {
+        if (!open && hasBeenUpdated) {
+          onClientUpdated?.();
+          setHasBeenUpdated(false);
+        }
+      }}
+    >
       <SheetTrigger asChild>
         <Button variant="outline" size="sm">
           View
@@ -130,91 +277,104 @@ export function ClientSheet({ client }: ClientSheetProps) {
       >
         <SheetHeader className="p-0">
           <SheetTitle>Client Details</SheetTitle>
+          <SheetDescription>
+            View and edit your client informations
+          </SheetDescription>
         </SheetHeader>
-        <SheetDescription>
-          View and edit your client informations
-        </SheetDescription>
 
         <div className="space-y-4 pb-4">
-          <div className="space-y-2">
-            <Label htmlFor="company_name">Company Name</Label>
-            <Input
-              id="company_name"
-              value={formData.company_name}
-              onChange={(e) => {
-                setFormData({ ...formData, company_name: e.target.value });
-                setErrors((prev) => ({ ...prev, company: undefined }));
-              }}
-              disabled={!isEditing}
-              className={errors.company && "border-red-500"}
-            />
-            {errors.company && (
-              <p className="text-sm text-red-500 mt-1">{errors.company}</p>
-            )}
-          </div>
+          <CompanyNameInput
+            id="company_name"
+            value={formData.company_name}
+            disabled={!isEditing}
+            error={errors.company}
+            onChange={(value) => {
+              setFormData({ ...formData, company_name: value });
+              setErrors((prev) => ({ ...prev, company: undefined }));
+            }}
+          />
+          <SiretInput
+            id="siret"
+            value={formData.siret}
+            disabled={!isEditing}
+            error={errors.siret}
+            onChange={(value) => {
+              setFormData({
+                ...formData,
+                siret: value,
+              });
+              setErrors((prev) => ({ ...prev, siret: undefined }));
+            }}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="siret">SIRET</Label>
-            <Input
-              id="siret"
-              value={formatSiret(formData.siret)}
-              onChange={(e) => {
-                setFormData({ ...formData, siret: parseSiret(e.target.value) });
-                setErrors((prev) => ({ ...prev, siret: undefined }));
-              }}
-              disabled={!isEditing}
-              className={errors.siret && "border-red-500"}
-            />
-            {errors.siret && (
-              <p className="text-sm text-red-500 mt-1">{errors.siret}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={formData.address || ""}
-              onChange={(e) => {
-                setFormData({ ...formData, address: e.target.value });
-                setErrors((prev) => ({ ...prev, address: undefined }));
-              }}
-              disabled={!isEditing}
-              className={errors.address && "border-red-500"}
-            />
-            {errors.address && (
-              <p className="text-sm text-red-500 mt-1">{errors.address}</p>
-            )}
-          </div>
+          <AddressInput
+            id="address"
+            value={formData.address || ""}
+            disabled={!isEditing}
+            placeholder="123 Rue de Paris, 75001 Paris"
+            error={errors.address}
+            onChange={(value) => {
+              setFormData({ ...formData, address: value });
+              setErrors((prev) => ({ ...prev, address: undefined }));
+            }}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="emails">Emails</Label>
-            <Input
-              id="emails"
-              value={formData.emails.join(", ")}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  emails: e.target.value.split(",").map((s) => s.trim()),
-                })
-              }
-              disabled
-            />
+            {isEditing && (
+              <Input
+                id="emails"
+                value={emailInput}
+                onChange={handleEmailInput}
+                placeholder="Write an email and press space"
+                className={cn(
+                  "transition-colors",
+                  !isEmailValid && "text-red-500 placeholder:text-red-400"
+                )}
+              />
+            )}
+            <div className="flex flex-wrap gap-2">
+              {formData.emails.map((email) => (
+                <Badge key={email} variant="secondary" className="gap-1">
+                  {email}
+                  {isEditing && (
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removeEmail(email)}
+                    />
+                  )}
+                </Badge>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phones">Phones</Label>
-            <Input
-              id="phones"
-              value={formData.phones.join(", ")}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  phones: e.target.value.split(",").map((s) => s.trim()),
-                })
-              }
-              disabled
-            />
+            {isEditing && (
+              <Input
+                id="phones"
+                value={phoneInput ? `0${formatPhone(phoneInput)}` : ""}
+                onChange={handlePhoneInput}
+                placeholder="Write a phone and press space"
+                className={cn(
+                  "transition-colors",
+                  !isPhoneValid && "text-red-500 placeholder:text-red-400"
+                )}
+              />
+            )}
+            <div className="flex flex-wrap gap-2">
+              {formData.phones.map((phone) => (
+                <Badge key={phone} variant="secondary" className="gap-1">
+                  0{formatPhone(phone)}
+                  {isEditing && (
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removePhone(phone)}
+                    />
+                  )}
+                </Badge>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -226,21 +386,49 @@ export function ClientSheet({ client }: ClientSheetProps) {
                 setFormData({ ...formData, notes: e.target.value })
               }
               disabled={!isEditing}
-              rows={4}
             />
           </div>
         </div>
 
         <SheetFooter className="gap-2 p-0">
           {!isEditing ? (
-            <Button onClick={handleEdit} className="w-full">
-              Edit
-            </Button>
+            <div className="flex space-x-3">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="flex-1">
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action is irreversible. All phone numbers and emails
+                      linked to this client will be permanently deleted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+
+                    <AlertDialogAction
+                      onClick={handleDeleteClient}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button onClick={handleEdit} className="flex-1">
+                Edit
+              </Button>
+            </div>
           ) : (
             <div className="flex space-x-3">
               <Button
-                variant="destructive"
                 onClick={handleDiscard}
+                variant="secondary"
                 className="flex-1"
               >
                 Discard

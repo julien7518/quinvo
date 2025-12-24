@@ -16,15 +16,17 @@ import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  formatSiret,
   isValidEmail,
   isValidPhone,
-  parseSiret,
   parsePhone,
   formatPhone,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
+import { SiretInput } from "../siret-input";
+import { CompanyNameInput } from "../company-input";
+import { AddressInput } from "../address-input";
+import { useInputValidation } from "@/hook/useInputValidation";
 
 interface NewClientProps {
   onClientAdded?: () => void;
@@ -43,11 +45,7 @@ export function NewClient({ onClientAdded }: NewClientProps) {
   const [phoneInput, setPhoneInput] = useState("");
   const [phones, setPhones] = useState<string[]>([]);
   const [isPhoneValid, setIsPhoneValid] = useState(true);
-  const [errors, setErrors] = useState<{
-    company?: string;
-    siret?: string;
-    address?: string;
-  }>({});
+  const { errors, validateClientForm, setErrors } = useInputValidation();
 
   const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -110,28 +108,15 @@ export function NewClient({ onClientAdded }: NewClientProps) {
     setEmails(emails.filter((email) => email !== emailToRemove));
   };
 
-  const validateForm = () => {
-    const newErrors: typeof errors = {};
-
-    if (!newCompany.trim()) {
-      newErrors.company = "Company name is required";
-    }
-
-    if (newSiret.length !== 14) {
-      newErrors.siret = "SIRET must contain exactly 14 digits";
-    }
-
-    if (!newAddress.trim()) {
-      newErrors.address = "Address is required";
-    }
-
-    setErrors(newErrors);
-
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSave = async () => {
-    if (!validateForm()) return;
+    if (
+      !validateClientForm({
+        company: newCompany,
+        siret: newSiret,
+        address: newAddress,
+      })
+    )
+      return;
 
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
@@ -192,51 +177,29 @@ export function NewClient({ onClientAdded }: NewClientProps) {
           <DialogTitle>Créer un nouveau client</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          <div>
-            <Label>Company name</Label>
-            <Input
-              value={newCompany}
-              onChange={(e) => {
-                setNewCompany(e.target.value);
-                setErrors((prev) => ({ ...prev, company: undefined }));
-              }}
-              placeholder="ACME Studio"
-              className={errors.company && "border-red-500"}
-            />
-            {errors.company && (
-              <p className="text-sm text-red-500 mt-1">{errors.company}</p>
-            )}
-          </div>
-          <div>
-            <Label>SIRET</Label>
-            <Input
-              value={formatSiret(newSiret)}
-              onChange={(e) => {
-                setNewSiret(parseSiret(e.target.value));
-                setErrors((prev) => ({ ...prev, siret: undefined }));
-              }}
-              placeholder={formatSiret("12345678912345")}
-              className={errors.siret && "border-red-500"}
-            />
-            {errors.siret && (
-              <p className="text-sm text-red-500 mt-1">{errors.siret}</p>
-            )}
-          </div>
-          <div>
-            <Label>Adress</Label>
-            <Input
-              value={newAddress}
-              onChange={(e) => {
-                setNewAddress(e.target.value);
-                setErrors((prev) => ({ ...prev, address: undefined }));
-              }}
-              placeholder="12 rue de Paris, 75000, Paris, France"
-              className={errors.address && "border-red-500"}
-            />
-            {errors.address && (
-              <p className="text-sm text-red-500 mt-1">{errors.address}</p>
-            )}
-          </div>
+          <CompanyNameInput
+            value={newCompany}
+            error={errors.company}
+            onChange={(value) => {
+              setNewCompany(value);
+              setErrors((prev) => ({ ...prev, company: undefined }));
+            }}
+            placeholder="ACME Studio"
+          />
+          <SiretInput
+            value={newSiret}
+            onChange={setNewSiret}
+            error={errors.siret}
+          />
+          <AddressInput
+            value={newAddress}
+            placeholder="12 rue de Paris, 75000, Paris, France"
+            error={errors.address}
+            onChange={(value) => {
+              setNewAddress(value);
+              setErrors((prev) => ({ ...prev, address: undefined }));
+            }}
+          />
           <div>
             <Label>Emails</Label>
             <Input
@@ -266,7 +229,7 @@ export function NewClient({ onClientAdded }: NewClientProps) {
             <Input
               value={phoneInput ? `0${formatPhone(phoneInput)}` : ""}
               onChange={handlePhoneInput}
-              placeholder="06 12 34 56 78"
+              placeholder="Write a phone and press space"
               className={cn(
                 "transition-colors",
                 !isPhoneValid && "text-red-500 placeholder:text-red-400"

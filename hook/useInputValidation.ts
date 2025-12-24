@@ -1,0 +1,36 @@
+import { useState } from "react";
+
+export type ClientErrors = {
+  company?: string;
+  siret?: string;
+  address?: string;
+};
+
+export function useInputValidation() {
+  const [errors, setErrors] = useState<ClientErrors>({});
+
+  const validateClientForm = (data: {
+    company?: string;
+    siret?: string;
+    address?: string;
+  }): boolean => {
+    const newErrors: ClientErrors = {};
+
+    if (data.company !== undefined && !data.company.trim()) {
+      newErrors.company = "Company name is required";
+    }
+
+    if (data.siret !== undefined && data.siret.length !== 14) {
+      newErrors.siret = "SIRET must contain exactly 14 digits";
+    }
+
+    if (data.address !== undefined && !data.address.trim()) {
+      newErrors.address = "Address is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  return { errors, validateClientForm, setErrors };
+}

@@ -13,6 +13,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { SiretInput } from "../siret-input";
+import { useInputValidation } from "@/hook/useInputValidation";
 
 type UrssafMode = "monthly" | "quarterly";
 
@@ -47,6 +49,8 @@ export function BusinessForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const { errors, validateClientForm, setErrors } = useInputValidation();
+
   useEffect(() => {
     const loadBusinessInfo = async () => {
       const {
@@ -74,7 +78,10 @@ export function BusinessForm() {
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault(); // empêche le reload de page
+    e.preventDefault();
+
+    if (!validateClientForm({ siret })) return;
+
     setLoading(true);
     setError(null);
 
@@ -137,17 +144,12 @@ export function BusinessForm() {
         </div>
 
         {/* SIRET */}
-        <div>
-          <Label>SIRET</Label>
-          <Input
-            className="mt-1"
-            placeholder={formatSiret(initialSiret)}
-            value={formatSiret(siret)}
-            onChange={(e) => {
-              setSiret(parseSiret(e.target.value));
-            }}
-          />
-        </div>
+        <SiretInput
+          value={siret}
+          placeholder={formatSiret(initialSiret)}
+          error={errors.siret}
+          onChange={(value) => setSiret(value)}
+        />
 
         {/* PHONE */}
         <div>

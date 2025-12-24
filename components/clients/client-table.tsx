@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -10,13 +10,14 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { ClientSheet } from "./client-sheet";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "../ui/input-group";
+} from "@/components/ui/input-group";
 import { NewClient } from "./new-client";
 import { formatSiret } from "@/lib/format";
 
@@ -92,11 +93,9 @@ export function ClientTable() {
     );
   });
 
-  if (loading) return <div>Loading...</div>;
-
   return (
     <div>
-      <div className="flex flex-row justify-between mb-8">
+      <div className="flex flex-row space-x-4 justify-between mb-8">
         <NewClient onClientAdded={fetchClients} />
 
         <InputGroup className="max-w-2xl">
@@ -107,39 +106,60 @@ export function ClientTable() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <InputGroupAddon>
-            <Search /> {/* Icône importée de lucide-react ou autre */}
+            <Search />
           </InputGroupAddon>
           <InputGroupAddon align="inline-end">
             {filteredClients.length} results
           </InputGroupAddon>
         </InputGroup>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Client</TableHead>
-            <TableHead>Emails</TableHead>
-            <TableHead>SIRET</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredClients.map((client) => (
-            <TableRow key={client.id}>
-              <TableCell>{client.company_name}</TableCell>
-              <TableCell>{client.emails.join(", ")}</TableCell>
-              <TableCell>{formatSiret(client.siret)}</TableCell>
-              <TableCell>
-                <ClientSheet client={client} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {filteredClients.length === 0 && (
-        <div className="text-center text-muted-foreground mt-8">
-          {searchTerm ? "Aucun client trouvé" : "Add your first clients"}
+
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
+      ) : (
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Client</TableHead>
+                <TableHead>Emails</TableHead>
+                <TableHead>SIRET</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredClients.map((client) => (
+                <TableRow key={client.id}>
+                  <TableCell>{client.company_name}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {client.emails.map((email) => (
+                        <Badge key={email} variant="secondary">
+                          {email}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatSiret(client.siret)}</TableCell>
+                  <TableCell>
+                    <ClientSheet
+                      client={client}
+                      onClientDeleted={fetchClients}
+                      onClientUpdated={fetchClients}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {filteredClients.length === 0 && (
+            <div className="text-center text-muted-foreground mt-8">
+              {searchTerm ? "Aucun client trouvé" : "Add your first clients"}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
