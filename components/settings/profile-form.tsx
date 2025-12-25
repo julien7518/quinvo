@@ -41,8 +41,14 @@ export function ProfileForm() {
 
       if (profileError) return;
 
+      setInitialEmail(user.email ?? "");
+      setEmail("");
+
       setInitialFirstName(profileData?.first_name ?? "");
       setInitialLastName(profileData?.last_name ?? "");
+
+      setFirstName("");
+      setLastName("");
     };
 
     loadUser();
@@ -59,26 +65,47 @@ export function ProfileForm() {
       const userId = userData.user?.id;
       if (!userId) throw new Error("User not found");
 
-      // 1️⃣ Mettre à jour email dans auth si changé
       if (email && email !== initialEmail) {
         const { error } = await supabase.auth.updateUser({ email });
         if (error) throw error;
       }
 
-      // 2️⃣ Mettre à jour firstName / lastName dans profiles
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-        })
-        .eq("id", userId); // <- important pour RLS et WHERE clause
-      if (profileError) throw profileError;
+      const profileUpdates: Record<string, string> = {};
 
-      setSuccess(true);
-      setInitialEmail(email);
-      setInitialFirstName(firstName);
-      setInitialLastName(lastName);
+      if (firstName && firstName !== initialFirstName) {
+        profileUpdates.first_name = firstName;
+      }
+
+      if (lastName && lastName !== initialLastName) {
+        profileUpdates.last_name = lastName;
+      }
+
+      if (Object.keys(profileUpdates).length > 0) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update(profileUpdates)
+          .eq("id", userId);
+
+        if (error) throw error;
+
+        if (profileError) throw profileError;
+
+        setSuccess(true);
+
+        if (email && email !== initialEmail) {
+          setInitialEmail(email);
+        }
+        if (firstName && firstName !== initialFirstName) {
+          setInitialFirstName(firstName);
+        }
+        if (lastName && lastName !== initialLastName) {
+          setInitialLastName(lastName);
+        }
+
+        setEmail("");
+        setFirstName("");
+        setLastName("");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

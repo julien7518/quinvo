@@ -4,6 +4,7 @@ export type ClientErrors = {
   company?: string;
   siret?: string;
   address?: string;
+  phone?: string;
 };
 
 export function useInputValidation() {
@@ -13,6 +14,7 @@ export function useInputValidation() {
     company?: string;
     siret?: string;
     address?: string;
+    phone?: string;
   }): boolean => {
     const newErrors: ClientErrors = {};
 
@@ -26,6 +28,10 @@ export function useInputValidation() {
 
     if (data.address !== undefined && !data.address.trim()) {
       newErrors.address = "Address is required";
+    }
+
+    if (data.phone !== undefined && data.phone.length !== 9) {
+      newErrors.phone = "Phone number must contain exactly 10 numbers";
     }
 
     setErrors(newErrors);

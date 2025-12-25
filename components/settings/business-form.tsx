@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { formatSiret, parseSiret } from "@/lib/format";
 import {
   Select,
   SelectTrigger,
@@ -14,99 +13,127 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SiretInput } from "../siret-input";
-import { useInputValidation } from "@/hook/useInputValidation";
+import { useInputValidation, ClientErrors } from "@/hook/useInputValidation";
+import { cn } from "@/lib/utils";
+import { formatSiret } from "@/lib/format";
 
 type UrssafMode = "monthly" | "quarterly";
 
 function formatFrenchPhone(value: string) {
   let digits = value.replace(/\D/g, "");
 
-  // Supprime le 0 initial
-  if (digits.startsWith("0")) {
-    digits = digits.slice(1);
-  }
-
+  if (digits.startsWith("0")) digits = digits.slice(1);
   digits = digits.slice(0, 9);
 
-  const spaced = digits.replace(/(\d)(?=(\d{2})+(?!\d))/g, "$1 ");
-
-  return spaced;
+  return digits.replace(/(\d)(?=(\d{2})+(?!\d))/g, "$1 ");
 }
 
 export function BusinessForm() {
   const supabase = createClient();
 
+  // Editable (temp)
   const [urssafMode, setUrssafMode] = useState<UrssafMode>("monthly");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [siret, setSiret] = useState("");
+  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  const [initialPhoneNumber, setInitialPhoneNumber] = useState("");
+  // Persisted (placeholders)
   const [initialSiret, setInitialSiret] = useState("");
+  const [initialPhone, setInitialPhone] = useState("");
   const [initialAddress, setInitialAddress] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { errors, validateClientForm, setErrors } = useInputValidation();
+  const { errors, validateClientForm } = useInputValidation();
 
+  /* ────────────────────────────
+     LOAD INITIAL DATA (ONCE)
+     ──────────────────────────── */
   useEffect(() => {
-    const loadBusinessInfo = async () => {
+    const load = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const userId = user.id;
-
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("profiles")
         .select("declaration_mode, siret, phone, address")
-        .eq("id", userId)
+        .eq("id", user.id)
         .single();
 
-      if (error) return;
+      if (!data) return;
 
       setUrssafMode(data.declaration_mode ?? "monthly");
       setInitialSiret(data.siret ?? "");
-      setInitialPhoneNumber(data.phone ?? "");
+      setInitialPhone(data.phone ?? "");
       setInitialAddress(data.address ?? "");
+
+      // inputs toujours vides
+      setSiret("");
+      setPhone("");
+      setAddress("");
     };
 
-    loadBusinessInfo();
+    load();
   }, []);
 
+  /* ────────────────────────────
+     SAVE
+     ──────────────────────────── */
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSuccess(false);
 
-    if (!validateClientForm({ siret })) return;
+    const toValidate: Partial<ClientErrors> = {};
+    if (siret.trim()) toValidate.siret = siret;
+    if (phone.trim()) toValidate.phone = phone;
+
+    if (Object.keys(toValidate).length && !validateClientForm(toValidate)) {
+      return;
+    }
 
     setLoading(true);
-    setError(null);
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId) throw new Error("User not found");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not found");
+
+      const updates: Record<string, any> = {};
+
+      if (urssafMode) updates.declaration_mode = urssafMode;
+      if (siret && siret !== initialSiret) updates.siret = siret;
+      if (phone && phone !== initialPhone) updates.phone = phone;
+      if (address && address !== initialAddress) updates.address = address;
+
+      if (!Object.keys(updates).length) {
+        setLoading(false);
+        return;
+      }
 
       const { error } = await supabase
         .from("profiles")
-        .update({
-          declaration_mode: urssafMode,
-          siret,
-          phone: phoneNumber,
-          address,
-        })
-        .eq("id", userId); // si tu as besoin de RLS
+        .update(updates)
+        .eq("id", user.id);
 
-      setLoading(false);
+      if (error) throw error;
 
-      if (error) {
-        setError(error.message);
-      } else {
-        setSuccess(true);
-      }
+      // ✅ update placeholders
+      if (updates.siret) setInitialSiret(siret);
+      if (updates.phone) setInitialPhone(phone);
+      if (updates.address) setInitialAddress(address);
+
+      // ✅ reset inputs
+      setSiret("");
+      setPhone("");
+      setAddress("");
+
+      setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -114,6 +141,9 @@ export function BusinessForm() {
     }
   };
 
+  /* ────────────────────────────
+     RENDER
+     ──────────────────────────── */
   return (
     <div className="flex justify-between">
       <div className="w-64 flex-shrink-0">
@@ -122,25 +152,23 @@ export function BusinessForm() {
           Manage your business details and preferences.
         </p>
       </div>
+
       <form onSubmit={handleSave} className="space-y-6 max-w-xl flex-1">
-        {/* URSSAF MODE */}
+        {/* URSSAF */}
         <div>
           <Label>URSSAF</Label>
           <Select
             value={urssafMode}
-            onValueChange={(value) => setUrssafMode(value as UrssafMode)}
+            onValueChange={(v) => setUrssafMode(v as UrssafMode)}
           >
             <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select mode" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="monthly">Declared monthly</SelectItem>
               <SelectItem value="quarterly">Declared quarterly</SelectItem>
             </SelectContent>
           </Select>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Used to estimate your declarations.
-          </p>
         </div>
 
         {/* SIRET */}
@@ -148,7 +176,7 @@ export function BusinessForm() {
           value={siret}
           placeholder={formatSiret(initialSiret)}
           error={errors.siret}
-          onChange={(value) => setSiret(value)}
+          onChange={setSiret}
         />
 
         {/* PHONE */}
@@ -156,39 +184,31 @@ export function BusinessForm() {
           <Label>Phone number</Label>
 
           <div className="relative mt-1">
-            {/* Drapeau */}
             <div className="pointer-events-none absolute left-0 top-0 flex h-9 items-center rounded-l-md border border-r-0 bg-muted px-3 text-sm">
               🇫🇷
             </div>
 
-            {/* Faux placeholder (reste du numéro) */}
-            {phoneNumber.length === 0 && (
-              <div className="pointer-events-none absolute left-[5.4rem] top-1/2 -translate-y-[48%] text-sm text-muted-foreground">
-                {formatFrenchPhone(initialPhoneNumber)}
+            {phone === "" && (
+              <div className="pointer-events-none absolute left-[5.4rem] top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                {formatFrenchPhone(initialPhone)}
               </div>
             )}
 
-            {/* Input */}
             <Input
-              className="pl-[3.5rem]"
-              value={`+33 ${formatFrenchPhone(phoneNumber)}`}
+              className={cn("pl-[3.5rem]", errors.phone && "border-red-500")}
+              value={`+33 ${formatFrenchPhone(phone)}`}
               onChange={(e) => {
                 let raw = e.target.value.replace(/\D/g, "");
-
-                // Supprime +33 s’il est recopié
-                if (raw.startsWith("33")) {
-                  raw = raw.slice(2);
-                }
-
-                // Supprime le 0 initial
-                if (raw.startsWith("0")) {
-                  raw = raw.slice(1);
-                }
-
-                setPhoneNumber(raw);
+                if (raw.startsWith("33")) raw = raw.slice(2);
+                if (raw.startsWith("0")) raw = raw.slice(1);
+                setPhone(raw);
               }}
             />
           </div>
+
+          {errors.phone && (
+            <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
+          )}
         </div>
 
         {/* ADDRESS */}
@@ -196,15 +216,15 @@ export function BusinessForm() {
           <Label>Business address</Label>
           <Input
             className="mt-1"
-            placeholder={initialAddress}
             value={address}
+            placeholder={initialAddress}
             onChange={(e) => setAddress(e.target.value)}
           />
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
         {success && (
-          <p className="text-sm text-green-600">Business information saved</p>
+          <p className="text-sm text-green-600">Saved successfully</p>
         )}
 
         <div className="flex justify-end">

@@ -156,7 +156,7 @@ export function ClientTable() {
           </Table>
           {filteredClients.length === 0 && (
             <div className="text-center text-muted-foreground mt-8">
-              {searchTerm ? "Aucun client trouvé" : "Add your first clients"}
+              {searchTerm ? "No client found" : "Add your first clients"}
             </div>
           )}
         </>
