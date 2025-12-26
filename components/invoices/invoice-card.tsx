@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Calendar, User } from "lucide-react";
+import { formatEuro, formatDate } from "@/lib/format";
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
 
@@ -29,21 +30,6 @@ const statusConfig: Record<
   paid: { label: "Paid", variant: "secondary" },
   overdue: { label: "Overdue", variant: "destructive" },
 };
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatAmount(amount: number) {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}
 
 export function InvoiceCard({
   invoice,
@@ -92,7 +78,7 @@ export function InvoiceCard({
         <div className="flex justify-between items-center pt-2 border-t">
           <div className="font-medium">Total</div>
           <span className="text-lg font-semibold">
-            {formatAmount(invoice.total_amount)}
+            {formatEuro(invoice.total_amount)}
           </span>
         </div>
 
