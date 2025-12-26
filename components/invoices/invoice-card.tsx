@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Calendar, User } from "lucide-react";
 import { formatEuro, formatDate } from "@/lib/format";
+import Link from "next/link";
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
 
@@ -31,13 +32,7 @@ const statusConfig: Record<
   overdue: { label: "Overdue", variant: "destructive" },
 };
 
-export function InvoiceCard({
-  invoice,
-  onOpen,
-}: {
-  invoice: InvoiceCardData;
-  onOpen?: (id: string) => void;
-}) {
+export function InvoiceCard({ invoice }: { invoice: InvoiceCardData }) {
   const status = statusConfig[invoice.status];
 
   return (
@@ -82,13 +77,11 @@ export function InvoiceCard({
           </span>
         </div>
 
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={() => onOpen?.(invoice.id)}
-        >
-          View invoice
-        </Button>
+        <Link href={`/invoices/view/${invoice.invoice_number}`}>
+          <Button variant="secondary" className="w-full">
+            View invoice
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   );

@@ -9,6 +9,7 @@ import {
 } from "@/components/invoices/invoice-card";
 import { SearchBar } from "../search-bar";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export function InvoiceLayout() {
   const supabase = createClient();
@@ -94,7 +95,9 @@ export function InvoiceLayout() {
     <div>
       {/* Header */}
       <div className="flex flex-row space-x-4 justify-between mb-8">
-        <Button>+ New invoice</Button>
+        <Link href={"/invoices/new"}>
+          <Button>+ New invoice</Button>
+        </Link>
         <SearchBar
           placeholder="Search for an invoice or client"
           value={searchTerm}

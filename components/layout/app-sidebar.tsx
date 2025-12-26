@@ -42,7 +42,9 @@ export function AppSidebar() {
           <Separator />
         </div>
         <div>
-          <Button className="w-full">+ New invoice</Button>
+          <Link href={"/invoices/new"}>
+            <Button className="w-full">+ New invoice</Button>
+          </Link>
         </div>
       </div>
 
