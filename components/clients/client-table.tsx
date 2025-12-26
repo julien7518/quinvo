@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -13,11 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { ClientSheet } from "./client-sheet";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { SearchBar } from "../search-bar";
 import { NewClient } from "./new-client";
 import { formatSiret } from "@/lib/format";
 
@@ -97,21 +93,13 @@ export function ClientTable() {
     <div>
       <div className="flex flex-row space-x-4 justify-between mb-8">
         <NewClient onClientAdded={fetchClients} />
-
-        <InputGroup className="max-w-2xl">
-          <InputGroupInput
-            type="text"
-            placeholder="Search for a client"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-          <InputGroupAddon align="inline-end">
-            {filteredClients.length} results
-          </InputGroupAddon>
-        </InputGroup>
+        <SearchBar
+          placeholder="Search for a client"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          resultCount={filteredClients.length}
+          className="max-w-2xl"
+        />
       </div>
 
       {loading ? (

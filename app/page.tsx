@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import { RecentInvoices } from "@/components/dashboard/recent-invoices";
 
 export default function DashboardPage() {
   return (
@@ -12,12 +13,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="h-64 rounded-xl border bg-background flex items-center justify-center">
+        <div className="rounded-xl border bg-background flex items-center justify-center">
           Graphique revenus
         </div>
-        <div className="h-64 rounded-xl border bg-background flex items-center justify-center">
-          Dernières factures
-        </div>
+        <RecentInvoices />
       </div>
     </AppShell>
   );

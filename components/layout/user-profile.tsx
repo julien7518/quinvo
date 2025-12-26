@@ -35,7 +35,6 @@ export function UserProfileSidebar() {
       const authUser = authData.user;
       if (!authUser) return;
 
-      // Lire firstName / lastName depuis profiles
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("first_name, last_name")
