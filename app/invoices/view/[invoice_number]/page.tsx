@@ -9,7 +9,7 @@ interface PageProps {
 export default async function ViewInvoicePage({ params }: PageProps) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <AppShell pageName={`Invoice n°${(await params).invoice_number}`}>
+      <AppShell pageName={`Invoice n°`}>
         <ViewInvoice />
       </AppShell>
     </Suspense>
