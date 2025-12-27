@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "../ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -19,8 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
-import { formatEuro } from "@/lib/format";
+import { Plus, Trash2, ChevronLeft } from "lucide-react";
+import { formatEuro, formatPhone, formatSiret } from "@/lib/format";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,25 +29,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-// Mock data
-const mockClients = [
-  {
-    id: "1",
-    company_name: "Client Example",
-    address: "123 rue Example",
-    postal: "75001 Paris",
-    siret: "12345678900012",
-  },
-  {
-    id: "2",
-    company_name: "Autre exemple",
-    address: "123 rue Example",
-    postal: "75999 Ville",
-    siret: "77777777777777",
-  },
-];
 
 export interface InvoiceItem {
   id: string;
@@ -57,68 +40,83 @@ export interface InvoiceItem {
   unit_price: number;
 }
 
-export function ViewInvoice() {
-  const [clients] = useState(mockClients);
-  const [clientId, setClientId] = useState<string | null>(null);
-  const [invoiceNumber, setInvoiceNumber] = useState("25-12-001");
+export interface Client {
+  id: string;
+  company_name: string;
+  address: string;
+  siret: string;
+}
 
-  const [issueDate, setIssueDate] = useState<Date | undefined>();
-  const [dueDate, setDueDate] = useState<Date | undefined>();
+export interface Invoice {
+  invoice_number: string;
+  issue_date?: Date;
+  due_date?: Date;
+  items: InvoiceItem[];
+  client_id: string | null;
+}
 
-  useEffect(() => {
-    const today = new Date();
-    setIssueDate(today);
-    setDueDate(
-      new Date(today.getFullYear(), today.getMonth() + 1, today.getDate())
-    );
-  }, []);
+export interface Issuer {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  siret: string;
+}
 
-  const [items, setItems] = useState<InvoiceItem[]>([
-    {
-      id: "1",
-      title: "Exemple de titre",
-      description: "Exemple de description",
-      quantity: 4,
-      unit_price: 13.7,
-    },
-  ]);
+export interface InvoiceLayoutProps {
+  invoice: Invoice;
+  issuer: Issuer | null;
+  clients: Client[];
+  mode: "create" | "view" | "edit";
+  onInvoiceNumberChange: (value: string) => void;
+  onIssueDateChange: (date?: Date) => void;
+  onDueDateChange: (date?: Date) => void;
+  onClientChange: (clientId: string | null) => void;
+  onItemsChange: (items: InvoiceItem[]) => void;
+  onAddItem: () => void;
+  onRemoveItem: (id: string) => void;
+}
 
-  const selectedClient = clients.find((c) => c.id === clientId);
+export function InvoiceLayout({
+  invoice,
+  issuer,
+  clients,
+  mode,
+  onInvoiceNumberChange,
+  onIssueDateChange,
+  onDueDateChange,
+  onClientChange,
+  onItemsChange,
+  onAddItem,
+  onRemoveItem,
+}: InvoiceLayoutProps) {
+  const selectedClient = clients.find((c) => c.id === invoice.client_id);
 
-  const subtotal = items.reduce(
+  const subtotal = invoice.items.reduce(
     (acc, item) => acc + item.quantity * item.unit_price,
     0
   );
-
-  const addItem = () => {
-    setItems((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        title: "",
-        description: "",
-        quantity: 1,
-        unit_price: 0,
-      },
-    ]);
-  };
 
   const updateItem = (
     id: string,
     field: keyof InvoiceItem,
     value: string | number
   ) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    const newItems = invoice.items.map((item) =>
+      item.id === id ? { ...item, [field]: value } : item
     );
-  };
-
-  const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    onItemsChange(newItems);
   };
 
   return (
-    <div className="">
+    <div>
+      <Link href={"/invoices"}>
+        <Button>
+          <ChevronLeft />
+          Invoices
+        </Button>
+      </Link>
       <div className="max-w-5xl mx-auto p-10">
         {/* Header */}
         <div className="flex flex-col mb-8">
@@ -127,9 +125,10 @@ export function ViewInvoice() {
             <div className="flex items-end gap-2">
               <h1 className="text-2xl font-bold">Facture N°</h1>
               <Input
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
+                value={invoice.invoice_number}
+                onChange={(e) => onInvoiceNumberChange(e.target.value)}
                 className="w-25 h-8 text-xl font-bold"
+                readOnly={mode === "view"}
               />
             </div>
           </div>
@@ -137,20 +136,36 @@ export function ViewInvoice() {
           {/* Infos perso */}
           <div className="flex justify-start text-sm">
             <div className="space-y-1">
-              <p className="font-semibold">Test User</p>
-              <p>12 rue de Paris</p>
-              <p>75000 Paris</p>
+              {issuer ? (
+                <>
+                  <p className="font-semibold">
+                    {issuer.first_name} {issuer.last_name}
+                  </p>
+                  <p>{issuer.address.split(",")[0]}</p>
+                  <p>{issuer.address.split(",").slice(1).join(",")}</p>
+                </>
+              ) : (
+                <>
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-52" />
+                  <Skeleton className="h-5 w-48" />
+                </>
+              )}
               <p>
-                <strong>Siret :</strong> 1234567890987654321
+                <strong>Siret :</strong> {formatSiret(issuer?.siret ?? "")}
               </p>
-              <p>Tél : +33 6 12 34 56 78</p>
-              <p>Email : my@email.com</p>
+              <p>Tél : +33 {formatPhone(issuer?.phone ?? "")}</p>
+              <p>Email : {issuer?.email}</p>
             </div>
           </div>
           <div className="flex justify-end text-sm">
             {/* Infos client */}
             <div className="flex flex-col items-end space-y-1">
-              <Select onValueChange={setClientId} value={clientId || undefined}>
+              <Select
+                onValueChange={(value) => onClientChange(value || null)}
+                value={invoice.client_id ?? ""}
+                disabled={mode === "view"}
+              >
                 <SelectTrigger className="font-semibold mb-2">
                   <SelectValue placeholder="Sélectionner un client" />
                 </SelectTrigger>
@@ -165,10 +180,10 @@ export function ViewInvoice() {
 
               {selectedClient && (
                 <div className="text-right space-y-1">
-                  <p>{selectedClient.address}</p>
-                  <p>{selectedClient.postal}</p>
+                  <p>{selectedClient.address.split(",")[0]}</p>
+                  <p>{selectedClient.address.split(",").slice(1).join(",")}</p>
                   <p>
-                    <strong>Siret :</strong> {selectedClient.siret}
+                    <strong>Siret :</strong> {formatSiret(selectedClient.siret)}
                   </p>
                 </div>
               )}
@@ -177,7 +192,7 @@ export function ViewInvoice() {
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 grid-rows-2 gap-1 text-sm w-1/2 mb-4">
+        <div className="grid grid-cols-2 grid-rows-2 items-center gap-1 text-sm w-1/2 mb-4">
           <p className="font-semibold">Date de facture</p>
           <Popover>
             <PopoverTrigger asChild>
@@ -185,22 +200,25 @@ export function ViewInvoice() {
                 variant="outline"
                 className={cn(
                   "w-fit justify-start text-left font-normal px-2",
-                  !issueDate && "text-muted-foreground"
+                  !invoice.issue_date && "text-muted-foreground"
                 )}
+                disabled={mode === "view"}
               >
-                {issueDate
-                  ? format(issueDate, "dd/MM/yyyy", { locale: fr })
+                {invoice.issue_date
+                  ? format(invoice.issue_date, "dd/MM/yyyy", { locale: fr })
                   : "Sélectionner"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={issueDate}
-                onSelect={setIssueDate}
-                locale={fr}
-              />
-            </PopoverContent>
+            {mode !== "view" && (
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={invoice.issue_date}
+                  onSelect={onIssueDateChange}
+                  locale={fr}
+                />
+              </PopoverContent>
+            )}
           </Popover>
           <p className="font-semibold">Échéance de paiement</p>
           <Popover>
@@ -209,27 +227,29 @@ export function ViewInvoice() {
                 variant="outline"
                 className={cn(
                   "w-fit justify-start text-left font-normal px-2",
-                  !dueDate && "text-muted-foreground"
+                  !invoice.due_date && "text-muted-foreground"
                 )}
+                disabled={mode === "view"}
               >
-                {dueDate
-                  ? format(dueDate, "dd/MM/yyyy", { locale: fr })
+                {invoice.due_date
+                  ? format(invoice.due_date, "dd/MM/yyyy", { locale: fr })
                   : "Sélectionner"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dueDate}
-                onSelect={setDueDate}
-                locale={fr}
-              />
-            </PopoverContent>
+            {mode !== "view" && (
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={invoice.due_date}
+                  onSelect={onDueDateChange}
+                  locale={fr}
+                />
+              </PopoverContent>
+            )}
           </Popover>
         </div>
 
         {/* Items table */}
-
         <div className="mb-8 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -244,7 +264,7 @@ export function ViewInvoice() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {invoice.items.map((item) => (
                 <TableRow key={item.id}>
                   {/* Description: titre + textarea */}
                   <TableCell className="space-y-2">
@@ -255,13 +275,15 @@ export function ViewInvoice() {
                       }
                       placeholder="Title"
                       className="font-bold"
+                      readOnly={mode === "view"}
                     />
                     <Textarea
-                      value={item.description}
+                      value={item.description ?? undefined}
                       onChange={(e) =>
                         updateItem(item.id, "description", e.target.value)
                       }
                       placeholder="Description"
+                      readOnly={mode === "view"}
                     />
                   </TableCell>
 
@@ -275,6 +297,7 @@ export function ViewInvoice() {
                         updateItem(item.id, "quantity", e.target.value)
                       }
                       className="text-center w-20 mx-auto"
+                      readOnly={mode === "view"}
                     />
                   </TableCell>
 
@@ -287,6 +310,7 @@ export function ViewInvoice() {
                         updateItem(item.id, "unit_price", e.target.value)
                       }
                       className="text-center w-20 mx-auto"
+                      readOnly={mode === "view"}
                     />
                   </TableCell>
 
@@ -300,7 +324,8 @@ export function ViewInvoice() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => onRemoveItem(item.id)}
+                      disabled={mode === "view"}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -312,7 +337,12 @@ export function ViewInvoice() {
         </div>
 
         <div className="flex justify-end mb-8">
-          <Button variant="outline" size="sm" onClick={addItem}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddItem}
+            disabled={mode === "view"}
+          >
             <Plus className="h-4 w-4 mr-2" /> Ajouter une ligne
           </Button>
         </div>
@@ -323,7 +353,9 @@ export function ViewInvoice() {
             <p className="font-semibold mb-2">
               À payer aux coordonnées suivantes :
             </p>
-            <p>Bénéficiaire : Test User</p>
+            <p>
+              Bénéficiaire : {issuer?.first_name} {issuer?.last_name}
+            </p>
             <p>IBAN : FR7699999999999999999999999</p>
             <p>BIC : BANKFRPX</p>
           </div>
@@ -346,7 +378,7 @@ export function ViewInvoice() {
               frais de recouvrement de 40 €
             </p>
 
-            <p className="text-xs font-semibold">
+            <p className="text-xs font-semibold text-muted-foreground">
               TVA non applicable, art. 293B du CGI
             </p>
           </div>
@@ -354,7 +386,7 @@ export function ViewInvoice() {
       </div>
 
       <div className="flex justify-end gap-4 mt-6">
-        <Button>Télécharger</Button>
+        <Button>Download</Button>
       </div>
     </div>
   );

@@ -77,7 +77,7 @@ export function InvoiceCard({ invoice }: { invoice: InvoiceCardData }) {
           </span>
         </div>
 
-        <Link href={`/invoices/view/${invoice.invoice_number}`}>
+        <Link href={`/invoices/view/${invoice.id}`}>
           <Button variant="secondary" className="w-full">
             View invoice
           </Button>

@@ -18,7 +18,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 border-r bg-background p-4 flex flex-col">
+    <aside className="w-64 border-r p-4 flex flex-col">
       <div className="mb-8 text-xl font-semibold">Quinvo</div>
       <div className="flex-1">
         <nav className="space-y-1 mb-2">
