@@ -3,14 +3,16 @@
 import {
   InvoiceLayout,
   Invoice,
+  InvoiceItem,
   Issuer,
   Client,
 } from "@/components/invoices/invoice-layout";
 import { AppShell } from "@/components/layout/app-shell";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
+import { formatDateForSupabase } from "@/lib/format";
 
 export default function ViewInvoicePage() {
   return (
@@ -21,6 +23,11 @@ export default function ViewInvoicePage() {
 }
 
 function InvoicePageContent() {
+  const supabase = createClient();
+  const cachedUserRef = useRef<any>(null);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [mode, setMode] = useState<"view" | "edit">("view");
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [issuer, setIssuer] = useState<Issuer | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -34,12 +41,11 @@ function InvoicePageContent() {
   useEffect(() => {
     if (!invoiceId) return;
 
-    const supabase = createClient();
-
     async function fetchData() {
       // Get authenticated user once
       const { data: userData } = await supabase.auth.getUser();
       const user = userData.user;
+      if (user) cachedUserRef.current = user;
       const userId = user?.id;
       if (!userId) return;
 
@@ -68,8 +74,15 @@ function InvoicePageContent() {
       }
 
       // Attach items to invoice object
+      // Attach items to invoice object
       const invoiceWithItems: Invoice = {
         ...invoiceData,
+        issue_date: invoiceData.issue_date
+          ? new Date(invoiceData.issue_date)
+          : undefined,
+        due_date: invoiceData.due_date
+          ? new Date(invoiceData.due_date)
+          : undefined,
         items: itemsData || [],
       };
 
@@ -111,8 +124,103 @@ function InvoicePageContent() {
     fetchData();
   }, [invoiceId]);
 
-  // No-op functions for callbacks
-  const noop = () => {};
+  const handleInvoiceNumberChange = (value: string) => {
+    setInvoice((prev) => (prev ? { ...prev, invoice_number: value } : null));
+  };
+
+  const handleIssueDateChange = (date?: Date) => {
+    setInvoice((prev) => (prev ? { ...prev, issue_date: date } : null));
+  };
+
+  const handleDueDateChange = (date?: Date) => {
+    setInvoice((prev) => (prev ? { ...prev, due_date: date } : null));
+  };
+
+  const handleClientChange = (client_id: string | null) => {
+    setInvoice((prev) => (prev ? { ...prev, client_id } : null));
+  };
+
+  const handleItemsChange = (items: InvoiceItem[]) => {
+    setInvoice((prev) => (prev ? { ...prev, items } : null));
+  };
+
+  const handleAddItem = () => {
+    const newItem: InvoiceItem = {
+      id: Date.now().toString(),
+      title: "",
+      description: "",
+      quantity: 0,
+      unit_price: 0,
+    };
+    setInvoice((prev) =>
+      prev ? { ...prev, items: [...prev.items, newItem] } : null
+    );
+  };
+
+  const handleRemoveItem = (id: string) => {
+    setInvoice((prev) =>
+      prev
+        ? { ...prev, items: prev.items.filter((item) => item.id !== id) }
+        : null
+    );
+  };
+
+  const handleOnEdit = () => {
+    setMode("edit");
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const user = cachedUserRef.current;
+
+    if (!user) {
+      console.log("User not authenticated");
+      setIsSaving(false);
+      return;
+    }
+
+    const { error: invoiceError, data } = await supabase
+      .from("invoices")
+      .update({
+        due_date: formatDateForSupabase(invoice?.due_date),
+      })
+      .eq("id", invoiceId)
+      .select()
+      .single();
+
+    if (invoiceError || !data) {
+      console.log(invoiceError);
+      setIsSaving(false);
+      return;
+    }
+    const invoiceData = data;
+
+    // Delete existing items
+    await supabase.from("invoice_items").delete().eq("invoice_id", invoiceId);
+
+    if (invoice && invoice.items && invoice.items.length > 0) {
+      const itemsToInsert = invoice.items.map((item) => ({
+        invoice_id: invoiceData.id,
+        title: item.title,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("invoice_items")
+        .insert(itemsToInsert);
+
+      if (itemsError) {
+        console.log(itemsError);
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    setIsSaving(false);
+    setMode("view");
+  };
 
   return (
     <AppShell pageName="View invoice">
@@ -121,14 +229,17 @@ function InvoicePageContent() {
           invoice={invoice}
           issuer={issuer}
           clients={clients}
-          mode="view"
-          onInvoiceNumberChange={noop}
-          onIssueDateChange={noop}
-          onDueDateChange={noop}
-          onClientChange={noop}
-          onItemsChange={noop}
-          onAddItem={noop}
-          onRemoveItem={noop}
+          mode={mode}
+          onInvoiceNumberChange={handleInvoiceNumberChange}
+          onIssueDateChange={handleIssueDateChange}
+          onDueDateChange={handleDueDateChange}
+          onClientChange={handleClientChange}
+          onItemsChange={handleItemsChange}
+          onAddItem={handleAddItem}
+          onRemoveItem={handleRemoveItem}
+          onSave={handleSave}
+          onEdit={handleOnEdit}
+          isSaving={isSaving}
         />
       ) : (
         <div className="flex justify-center items-center">

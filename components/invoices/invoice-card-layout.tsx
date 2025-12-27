@@ -34,10 +34,11 @@ export function InvoiceLayout() {
           status,
           clients ( company_name ),
           invoice_items ( quantity, unit_price )
+          updated_at
         `
         )
         .eq("user_id", userId)
-        .order("issue_date", { ascending: false });
+        .order("updated_at", { ascending: false });
 
       if (error || !data) {
         setLoading(false);

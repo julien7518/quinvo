@@ -3,7 +3,13 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -19,16 +25,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, Loader2 } from "lucide-react";
 import { formatEuro, formatPhone, formatSiret } from "@/lib/format";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -68,7 +68,7 @@ export interface InvoiceLayoutProps {
   invoice: Invoice;
   issuer: Issuer | null;
   clients: Client[];
-  mode: "create" | "view" | "edit";
+  mode: "create" | "edit" | "view";
   onInvoiceNumberChange: (value: string) => void;
   onIssueDateChange: (date?: Date) => void;
   onDueDateChange: (date?: Date) => void;
@@ -76,6 +76,9 @@ export interface InvoiceLayoutProps {
   onItemsChange: (items: InvoiceItem[]) => void;
   onAddItem: () => void;
   onRemoveItem: (id: string) => void;
+  onSave: () => void;
+  onEdit: () => void;
+  isSaving?: boolean;
 }
 
 export function InvoiceLayout({
@@ -90,7 +93,12 @@ export function InvoiceLayout({
   onItemsChange,
   onAddItem,
   onRemoveItem,
+  onSave,
+  onEdit,
+  isSaving,
 }: InvoiceLayoutProps) {
+  function downloadInvoicePDF() {}
+
   const selectedClient = clients.find((c) => c.id === invoice.client_id);
 
   const subtotal = invoice.items.reduce(
@@ -111,12 +119,23 @@ export function InvoiceLayout({
 
   return (
     <div>
-      <Link href={"/invoices"}>
-        <Button>
-          <ChevronLeft />
-          Invoices
+      <div className="flex justify-between">
+        <Link href="/invoices">
+          <Button>
+            <ChevronLeft />
+            Invoices
+          </Button>
+        </Link>
+
+        <Button
+          onClick={mode === "view" ? onEdit : onSave}
+          disabled={mode !== "view" && isSaving}
+          className="flex items-center gap-2"
+        >
+          {isSaving && <Loader2 className="animate-spin" />}
+          {mode === "view" ? "Edit" : "Save"}
         </Button>
-      </Link>
+      </div>
       <div className="max-w-5xl mx-auto p-10">
         {/* Header */}
         <div className="flex flex-col mb-8">
@@ -124,12 +143,17 @@ export function InvoiceLayout({
           <div className="flex justify-end mb-4">
             <div className="flex items-end gap-2">
               <h1 className="text-2xl font-bold">Facture N°</h1>
-              <Input
-                value={invoice.invoice_number}
-                onChange={(e) => onInvoiceNumberChange(e.target.value)}
-                className="w-25 h-8 text-xl font-bold"
-                readOnly={mode === "view"}
-              />
+              {mode === "view" || mode === "edit" ? (
+                <span className="text-2xl font-bold">
+                  {invoice.invoice_number}
+                </span>
+              ) : (
+                <Input
+                  value={invoice.invoice_number}
+                  onChange={(e) => onInvoiceNumberChange(e.target.value)}
+                  className="w-25 h-8 text-xl font-bold"
+                />
+              )}
             </div>
           </div>
 
@@ -161,22 +185,27 @@ export function InvoiceLayout({
           <div className="flex justify-end text-sm">
             {/* Infos client */}
             <div className="flex flex-col items-end space-y-1">
-              <Select
-                onValueChange={(value) => onClientChange(value || null)}
-                value={invoice.client_id ?? ""}
-                disabled={mode === "view"}
-              >
-                <SelectTrigger className="font-semibold mb-2">
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent className="font-semibold">
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.company_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {mode === "view" || mode === "edit" ? (
+                <span className="font-semibold">
+                  {selectedClient?.company_name}
+                </span>
+              ) : (
+                <Select
+                  onValueChange={(value) => onClientChange(value || null)}
+                  value={invoice.client_id ?? ""}
+                >
+                  <SelectTrigger className="font-semibold mb-2">
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent className="font-semibold">
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.company_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               {selectedClient && (
                 <div className="text-right space-y-1">
@@ -194,22 +223,27 @@ export function InvoiceLayout({
         {/* Dates */}
         <div className="grid grid-cols-2 grid-rows-2 items-center gap-1 text-sm w-1/2 mb-4">
           <p className="font-semibold">Date de facture</p>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-fit justify-start text-left font-normal px-2",
-                  !invoice.issue_date && "text-muted-foreground"
-                )}
-                disabled={mode === "view"}
-              >
-                {invoice.issue_date
-                  ? format(invoice.issue_date, "dd/MM/yyyy", { locale: fr })
-                  : "Sélectionner"}
-              </Button>
-            </PopoverTrigger>
-            {mode !== "view" && (
+          {mode === "view" || mode === "edit" ? (
+            <span className="text-left justify-start font-normal">
+              {invoice.issue_date
+                ? format(invoice.issue_date, "dd/MM/yyyy", { locale: fr })
+                : ""}
+            </span>
+          ) : (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-fit justify-start text-left font-normal px-2",
+                    !invoice.issue_date && "text-muted-foreground"
+                  )}
+                >
+                  {invoice.issue_date
+                    ? format(invoice.issue_date, "dd/MM/yyyy", { locale: fr })
+                    : "Sélectionner"}
+                </Button>
+              </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
@@ -218,25 +252,30 @@ export function InvoiceLayout({
                   locale={fr}
                 />
               </PopoverContent>
-            )}
-          </Popover>
+            </Popover>
+          )}
           <p className="font-semibold">Échéance de paiement</p>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-fit justify-start text-left font-normal px-2",
-                  !invoice.due_date && "text-muted-foreground"
-                )}
-                disabled={mode === "view"}
-              >
-                {invoice.due_date
-                  ? format(invoice.due_date, "dd/MM/yyyy", { locale: fr })
-                  : "Sélectionner"}
-              </Button>
-            </PopoverTrigger>
-            {mode !== "view" && (
+          {mode === "view" ? (
+            <span className="text-left justify-start font-normal">
+              {invoice.due_date
+                ? format(invoice.due_date, "dd/MM/yyyy", { locale: fr })
+                : ""}
+            </span>
+          ) : (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-fit justify-start text-left font-normal px-2",
+                    !invoice.due_date && "text-muted-foreground"
+                  )}
+                >
+                  {invoice.due_date
+                    ? format(invoice.due_date, "dd/MM/yyyy", { locale: fr })
+                    : "Sélectionner"}
+                </Button>
+              </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
@@ -245,8 +284,8 @@ export function InvoiceLayout({
                   locale={fr}
                 />
               </PopoverContent>
-            )}
-          </Popover>
+            </Popover>
+          )}
         </div>
 
         {/* Items table */}
@@ -260,7 +299,7 @@ export function InvoiceLayout({
                   Prix unitaire HT
                 </TableHead>
                 <TableHead className="text-right w-32">Prix total HT</TableHead>
-                <TableHead className="w-10" />
+                {mode === "view" ? <></> : <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -268,50 +307,66 @@ export function InvoiceLayout({
                 <TableRow key={item.id}>
                   {/* Description: titre + textarea */}
                   <TableCell className="space-y-2">
-                    <Input
-                      value={item.title.split("\n")[0]}
-                      onChange={(e) =>
-                        updateItem(item.id, "title", e.target.value)
-                      }
-                      placeholder="Title"
-                      className="font-bold"
-                      readOnly={mode === "view"}
-                    />
-                    <Textarea
-                      value={item.description ?? undefined}
-                      onChange={(e) =>
-                        updateItem(item.id, "description", e.target.value)
-                      }
-                      placeholder="Description"
-                      readOnly={mode === "view"}
-                    />
+                    {mode === "view" ? (
+                      <span className="font-bold h-5 flex">{item.title}</span>
+                    ) : (
+                      <Input
+                        value={item.title}
+                        onChange={(e) =>
+                          updateItem(item.id, "title", e.target.value)
+                        }
+                        placeholder="Title"
+                        className="font-bold"
+                      />
+                    )}
+                    {mode === "view" ? (
+                      <span className="">{item.description}</span>
+                    ) : (
+                      <Textarea
+                        value={item.description ?? undefined}
+                        onChange={(e) =>
+                          updateItem(item.id, "description", e.target.value)
+                        }
+                        placeholder="Description"
+                      />
+                    )}
                   </TableCell>
 
                   {/* Quantité */}
                   <TableCell className="text-center">
-                    <Input
-                      type="number"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateItem(item.id, "quantity", e.target.value)
-                      }
-                      className="text-center w-20 mx-auto"
-                      readOnly={mode === "view"}
-                    />
+                    {mode === "view" ? (
+                      <span className="text-center w-20 mx-auto">
+                        {item.quantity}
+                      </span>
+                    ) : (
+                      <Input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateItem(item.id, "quantity", e.target.value)
+                        }
+                        className="text-center w-20 mx-auto"
+                      />
+                    )}
                   </TableCell>
 
                   {/* Prix unitaire */}
                   <TableCell className="text-center">
-                    <Input
-                      type="number"
-                      value={item.unit_price}
-                      onChange={(e) =>
-                        updateItem(item.id, "unit_price", e.target.value)
-                      }
-                      className="text-center w-20 mx-auto"
-                      readOnly={mode === "view"}
-                    />
+                    {mode === "view" ? (
+                      <span className="text-center w-20 mx-auto">
+                        {item.unit_price}
+                      </span>
+                    ) : (
+                      <Input
+                        type="number"
+                        value={item.unit_price}
+                        onChange={(e) =>
+                          updateItem(item.id, "unit_price", e.target.value)
+                        }
+                        className="text-center w-20 mx-auto"
+                      />
+                    )}
                   </TableCell>
 
                   {/* Total */}
@@ -320,23 +375,31 @@ export function InvoiceLayout({
                   </TableCell>
 
                   {/* Supprimer */}
-                  <TableCell>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onRemoveItem(item.id)}
-                      disabled={mode === "view"}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                  {mode === "view" ? (
+                    <></>
+                  ) : (
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onRemoveItem(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
 
-        <div className="flex justify-end mb-8">
+        <div
+          className={cn(
+            "flex justify-end mb-8",
+            mode === "view" ? "hidden" : ""
+          )}
+        >
           <Button
             variant="outline"
             size="sm"
@@ -363,7 +426,7 @@ export function InvoiceLayout({
             <div className="w-64 space-y-2">
               <div className="flex justify-between text-lg font-bold border-t-2 border-gray-800 pt-2">
                 <span>Total HT</span>
-                <span>{subtotal.toFixed(2)} €</span>
+                <span>{formatEuro(subtotal)}</span>
               </div>
             </div>
           </div>
@@ -386,7 +449,7 @@ export function InvoiceLayout({
       </div>
 
       <div className="flex justify-end gap-4 mt-6">
-        <Button>Download</Button>
+        <Button onClick={() => downloadInvoicePDF()}>Download</Button>
       </div>
     </div>
   );
