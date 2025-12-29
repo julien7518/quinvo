@@ -4,12 +4,14 @@ import {
   InvoiceLayout,
   Invoice,
   InvoiceItem,
+  InvoiceStatus,
   Issuer,
   Client,
+  Errors,
 } from "@/components/invoices/invoice-layout";
 import { AppShell } from "@/components/layout/app-shell";
-import { useState, useEffect, Suspense, useRef, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, Suspense, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 import { formatDateForSupabase } from "@/lib/format";
@@ -25,12 +27,14 @@ export default function ViewInvoicePage() {
 function InvoicePageContent() {
   const supabase = createClient();
   const cachedUserRef = useRef<any>(null);
+  const router = useRouter();
 
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [issuer, setIssuer] = useState<Issuer | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
+  const [errors, setErrors] = useState<Errors>({});
 
   const params = useParams();
   const invoiceId =
@@ -73,7 +77,6 @@ function InvoicePageContent() {
         return;
       }
 
-      // Attach items to invoice object
       // Attach items to invoice object
       const invoiceWithItems: Invoice = {
         ...invoiceData,
@@ -165,11 +168,36 @@ function InvoicePageContent() {
     );
   };
 
+  const handleStatusChange = (status: InvoiceStatus) => {
+    setInvoice((prev) => (prev ? { ...prev, status: status } : null));
+  };
+
   const handleOnEdit = () => {
     setMode("edit");
   };
 
+  const validateInvoice = () => {
+    const newErrors: {
+      invoice_number?: string;
+      client?: string;
+      date?: string;
+    } = {};
+
+    // Dates validation
+    if (!invoice?.issue_date || !invoice?.due_date) {
+      newErrors.date = "Issue date and due date are required";
+    } else if (invoice?.due_date < invoice?.issue_date) {
+      newErrors.date = "Due date cannot be before issue date";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
+    setErrors({});
+    if (!validateInvoice()) return;
+
     setIsSaving(true);
     const user = cachedUserRef.current;
 
@@ -220,6 +248,25 @@ function InvoicePageContent() {
 
     setIsSaving(false);
     setMode("view");
+    console.log(invoice?.issue_date, invoice?.due_date);
+  };
+
+  const handleDelete = async () => {
+    const user = cachedUserRef.current;
+    if (!user || !invoiceId) return;
+
+    const { error: invoiceError } = await supabase
+      .from("invoices")
+      .delete()
+      .eq("id", invoiceId)
+      .eq("user_id", user.id);
+
+    if (invoiceError) {
+      console.log(invoiceError);
+      return;
+    }
+
+    router.push(`/invoices/`);
   };
 
   return (
@@ -230,6 +277,7 @@ function InvoicePageContent() {
           issuer={issuer}
           clients={clients}
           mode={mode}
+          errors={errors}
           onInvoiceNumberChange={handleInvoiceNumberChange}
           onIssueDateChange={handleIssueDateChange}
           onDueDateChange={handleDueDateChange}
@@ -239,6 +287,8 @@ function InvoicePageContent() {
           onRemoveItem={handleRemoveItem}
           onSave={handleSave}
           onEdit={handleOnEdit}
+          onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
           isSaving={isSaving}
         />
       ) : (

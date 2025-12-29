@@ -4,28 +4,33 @@ import {
   InvoiceLayout,
   Invoice,
   InvoiceItem,
+  InvoiceStatus,
   Issuer,
   Client,
+  Errors,
 } from "@/components/invoices/invoice-layout";
 import { AppShell } from "@/components/layout/app-shell";
 import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect, useRef } from "react";
 import { formatDateForSupabase } from "@/lib/format";
+import { useRouter } from "next/navigation";
 
 export default function NewInvoice() {
   const supabase = createClient();
+  const router = useRouter();
 
   const cachedUserRef = useRef<any>(null);
-  const invoiceIdRef = useRef<string | null>(null);
 
   const [mode, setMode] = useState<"create" | "edit" | "view">("create");
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Errors>({});
 
   const [issuer, setIssuer] = useState<Issuer | null>(null);
   const [invoice, setInvoice] = useState<Invoice>({
     invoice_number: "",
     issue_date: undefined,
     due_date: undefined,
+    status: "draft",
     items: [
       {
         id: "",
@@ -74,6 +79,10 @@ export default function NewInvoice() {
       ...prev,
       items: prev.items.filter((item) => item.id !== id),
     }));
+  };
+
+  const handleStatusChange = (status: InvoiceStatus) => {
+    setInvoice((prev) => ({ ...prev, status: status }));
   };
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -159,14 +168,66 @@ export default function NewInvoice() {
       }
     }
 
+    setErrors({});
     fetchData();
   }, []);
+
+  const validateInvoice = async () => {
+    const newErrors: {
+      invoice_number?: string;
+      client?: string;
+      date?: string;
+    } = {};
+
+    // Invoice number format: YY-MM-XXX
+    const invoiceNumberRegex = /^\d{2}-\d{2}-\d{3}$/;
+    if (
+      !invoice.invoice_number ||
+      !invoiceNumberRegex.test(invoice.invoice_number)
+    ) {
+      newErrors.invoice_number = "Invalid invoice number format";
+    }
+
+    // Invoice number uniqueness
+    const { data: existingInvoice, error: invoiceCheckError } = await supabase
+      .from("invoices")
+      .select("id")
+      .eq("invoice_number", invoice.invoice_number)
+      .limit(1)
+      .maybeSingle();
+
+    if (invoiceCheckError) {
+      console.log(invoiceCheckError);
+    }
+
+    if (existingInvoice) {
+      newErrors.invoice_number = "Invoice number already exists";
+    }
+
+    // Client required
+    if (!invoice.client_id) {
+      newErrors.client = "Client is required";
+    }
+
+    // Dates validation
+    if (!invoice.issue_date || !invoice.due_date) {
+      newErrors.date = "Issue date and due date are required";
+    } else if (invoice.due_date < invoice.issue_date) {
+      newErrors.date = "Due date cannot be before issue date";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleOnEdit = () => {
     setMode("edit");
   };
 
   const handleSave = async () => {
+    setErrors({});
+    if (!(await validateInvoice())) return;
+
     setIsSaving(true);
     const user = cachedUserRef.current;
 
@@ -176,54 +237,36 @@ export default function NewInvoice() {
       return;
     }
 
-    const invoiceId = invoiceIdRef.current;
-    let invoiceData;
+    // 1. Insert invoice
+    const { data: invoiceData, error: invoiceError } = await supabase
+      .from("invoices")
+      .insert({
+        user_id: user.id,
+        invoice_number: invoice.invoice_number,
+        issue_date: formatDateForSupabase(invoice.issue_date),
+        due_date: formatDateForSupabase(invoice.due_date),
+        client_id: invoice.client_id,
+      })
+      .select()
+      .single();
 
-    if (invoiceId) {
-      // Update existing invoice
-      const { error: invoiceError, data } = await supabase
-        .from("invoices")
-        .update({
-          due_date: formatDateForSupabase(invoice.due_date),
-        })
-        .eq("id", invoiceId)
-        .select()
-        .single();
-
-      if (invoiceError || !data) {
-        console.log(invoiceError);
-        setIsSaving(false);
-        return;
-      }
-      invoiceData = data;
-
-      // Delete existing items
-      await supabase.from("invoice_items").delete().eq("invoice_id", invoiceId);
-    } else {
-      // Insert new invoice
-      const { error: invoiceError, data } = await supabase
-        .from("invoices")
-        .insert({
-          user_id: user.id,
-          invoice_number: invoice.invoice_number,
-          issue_date: invoice.issue_date,
-          due_date: invoice.due_date,
-          client_id: invoice.client_id,
-        })
-        .select()
-        .single();
-
-      if (invoiceError || !data) {
-        console.log(invoiceError);
-        setIsSaving(false);
-        return;
-      }
-      invoiceData = data;
-      invoiceIdRef.current = data.id; // Sauvegarder l'ID
+    if (invoiceError || !invoiceData) {
+      console.log(invoiceError);
+      setIsSaving(false);
+      return;
     }
 
-    if (invoice.items.length > 0) {
-      const itemsToInsert = invoice.items.map((item) => ({
+    // 2. Insert items
+    const validItems = invoice.items.filter(
+      (item) =>
+        item.title ||
+        item.description ||
+        item.quantity !== 0 ||
+        item.unit_price !== 0
+    );
+
+    if (validItems.length > 0) {
+      const itemsToInsert = validItems.map((item) => ({
         invoice_id: invoiceData.id,
         title: item.title,
         description: item.description,
@@ -242,8 +285,32 @@ export default function NewInvoice() {
       }
     }
 
+    // 3. Reset states
+    setInvoice({
+      invoice_number: "",
+      issue_date: undefined,
+      due_date: undefined,
+      status: "draft",
+      items: [
+        {
+          id: "",
+          title: "",
+          description: "",
+          quantity: 0,
+          unit_price: 0,
+        },
+      ],
+      client_id: null,
+    });
+
+    setIssuer(null);
+    setClients([]);
+    setMode("create");
+
     setIsSaving(false);
-    setMode("view");
+
+    // 4. Redirect to view page
+    router.push(`/invoices/view/${invoiceData.id}`);
   };
 
   return (
@@ -253,6 +320,7 @@ export default function NewInvoice() {
         issuer={issuer}
         clients={clients}
         mode={mode}
+        errors={errors}
         onInvoiceNumberChange={handleInvoiceNumberChange}
         onIssueDateChange={handleIssueDateChange}
         onDueDateChange={handleDueDateChange}
@@ -262,6 +330,7 @@ export default function NewInvoice() {
         onRemoveItem={handleRemoveItem}
         onSave={handleSave}
         onEdit={handleOnEdit}
+        onStatusChange={handleStatusChange}
         isSaving={isSaving}
       />
     </AppShell>

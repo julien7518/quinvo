@@ -25,6 +25,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Plus, Trash2, ChevronLeft, Loader2 } from "lucide-react";
 import { formatEuro, formatPhone, formatSiret } from "@/lib/format";
 import { format } from "date-fns";
@@ -40,6 +51,12 @@ export interface InvoiceItem {
   unit_price: number;
 }
 
+export interface Errors {
+  invoice_number?: string;
+  client?: string;
+  date?: string;
+}
+
 export interface Client {
   id: string;
   company_name: string;
@@ -47,12 +64,15 @@ export interface Client {
   siret: string;
 }
 
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
+
 export interface Invoice {
   invoice_number: string;
   issue_date?: Date;
   due_date?: Date;
   items: InvoiceItem[];
   client_id: string | null;
+  status: InvoiceStatus;
 }
 
 export interface Issuer {
@@ -69,6 +89,7 @@ export interface InvoiceLayoutProps {
   issuer: Issuer | null;
   clients: Client[];
   mode: "create" | "edit" | "view";
+  errors: Errors;
   onInvoiceNumberChange: (value: string) => void;
   onIssueDateChange: (date?: Date) => void;
   onDueDateChange: (date?: Date) => void;
@@ -78,6 +99,8 @@ export interface InvoiceLayoutProps {
   onRemoveItem: (id: string) => void;
   onSave: () => void;
   onEdit: () => void;
+  onDelete?: () => void;
+  onStatusChange: (status: InvoiceStatus) => void;
   isSaving?: boolean;
 }
 
@@ -86,6 +109,7 @@ export function InvoiceLayout({
   issuer,
   clients,
   mode,
+  errors,
   onInvoiceNumberChange,
   onIssueDateChange,
   onDueDateChange,
@@ -95,6 +119,8 @@ export function InvoiceLayout({
   onRemoveItem,
   onSave,
   onEdit,
+  onDelete,
+  onStatusChange,
   isSaving,
 }: InvoiceLayoutProps) {
   function downloadInvoicePDF() {}
@@ -126,7 +152,24 @@ export function InvoiceLayout({
             Invoices
           </Button>
         </Link>
-
+        <div className="flex gap-1 border rounded-md p-1">
+          {(["draft", "sent", "paid", "overdue"] as const).map((status) => (
+            <Button
+              key={status}
+              variant={
+                invoice.status === status
+                  ? status === "overdue"
+                    ? "destructive"
+                    : "default"
+                  : "ghost"
+              }
+              size="sm"
+              onClick={() => onStatusChange(status)}
+            >
+              {status}
+            </Button>
+          ))}
+        </div>
         <Button
           onClick={mode === "view" ? onEdit : onSave}
           disabled={mode !== "view" && isSaving}
@@ -141,18 +184,28 @@ export function InvoiceLayout({
         <div className="flex flex-col mb-8">
           {/* Facture */}
           <div className="flex justify-end mb-4">
-            <div className="flex items-end gap-2">
-              <h1 className="text-2xl font-bold">Facture N°</h1>
-              {mode === "view" || mode === "edit" ? (
-                <span className="text-2xl font-bold">
-                  {invoice.invoice_number}
-                </span>
-              ) : (
-                <Input
-                  value={invoice.invoice_number}
-                  onChange={(e) => onInvoiceNumberChange(e.target.value)}
-                  className="w-25 h-8 text-xl font-bold"
-                />
+            <div className="flex-col">
+              <div className="flex items-end gap-2">
+                <h1 className="text-2xl font-bold">Facture N°</h1>
+                {mode === "view" || mode === "edit" ? (
+                  <span className="text-2xl font-bold">
+                    {invoice.invoice_number}
+                  </span>
+                ) : (
+                  <Input
+                    value={invoice.invoice_number}
+                    onChange={(e) => onInvoiceNumberChange(e.target.value)}
+                    className={cn(
+                      "w-25 h-8 text-xl font-bold",
+                      errors.invoice_number ? "border-red-500" : ""
+                    )}
+                  />
+                )}
+              </div>
+              {errors.invoice_number && (
+                <p className="text-sm text-red-500 text-end mt-1">
+                  {errors.invoice_number}
+                </p>
               )}
             </div>
           </div>
@@ -190,21 +243,34 @@ export function InvoiceLayout({
                   {selectedClient?.company_name}
                 </span>
               ) : (
-                <Select
-                  onValueChange={(value) => onClientChange(value || null)}
-                  value={invoice.client_id ?? ""}
-                >
-                  <SelectTrigger className="font-semibold mb-2">
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent className="font-semibold">
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.company_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Select
+                    onValueChange={(value) => onClientChange(value || null)}
+                    value={invoice.client_id ?? ""}
+                    required={true}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "font-semibold mb-2",
+                        errors.client ? "border-red-500" : ""
+                      )}
+                    >
+                      <SelectValue placeholder="Sélectionner un client" />
+                    </SelectTrigger>
+                    <SelectContent className="font-semibold">
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.client && (
+                    <p className="text-sm text-red-500 text-end mt-1">
+                      {errors.client}
+                    </p>
+                  )}
+                </div>
               )}
 
               {selectedClient && (
@@ -221,10 +287,15 @@ export function InvoiceLayout({
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 grid-rows-2 items-center gap-1 text-sm w-1/2 mb-4">
+        <div
+          className={cn(
+            "grid grid-cols-2 grid-rows-2 items-center gap-1 text-sm w-1/2",
+            errors.date ? "" : "mb-4"
+          )}
+        >
           <p className="font-semibold">Date de facture</p>
           {mode === "view" || mode === "edit" ? (
-            <span className="text-left justify-start font-normal">
+            <span className="text-left justify-start font-normal px-2">
               {invoice.issue_date
                 ? format(invoice.issue_date, "dd/MM/yyyy", { locale: fr })
                 : ""}
@@ -236,7 +307,8 @@ export function InvoiceLayout({
                   variant="outline"
                   className={cn(
                     "w-fit justify-start text-left font-normal px-2",
-                    !invoice.issue_date && "text-muted-foreground"
+                    !invoice.issue_date && "text-muted-foreground",
+                    errors.date ? "border-red-500" : ""
                   )}
                 >
                   {invoice.issue_date
@@ -268,7 +340,8 @@ export function InvoiceLayout({
                   variant="outline"
                   className={cn(
                     "w-fit justify-start text-left font-normal px-2",
-                    !invoice.due_date && "text-muted-foreground"
+                    !invoice.due_date && "text-muted-foreground",
+                    errors.date ? "border-red-500" : ""
                   )}
                 >
                   {invoice.due_date
@@ -287,6 +360,11 @@ export function InvoiceLayout({
             </Popover>
           )}
         </div>
+        <p>
+          {errors.date && (
+            <p className="text-sm text-red-500 mt-1 mb-4">{errors.date}</p>
+          )}
+        </p>
 
         {/* Items table */}
         <div className="mb-8 overflow-x-auto">
@@ -448,8 +526,36 @@ export function InvoiceLayout({
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 mt-6">
+      <div className="flex w-full justify-between gap-4 mt-6">
         <Button onClick={() => downloadInvoicePDF()}>Download</Button>
+        {mode !== "create" && onDelete ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Delete</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action is irreversible.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+
+                <AlertDialogAction
+                  onClick={() => onDelete()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : (
+          <></>
+        )}
       </div>
     </div>
   );

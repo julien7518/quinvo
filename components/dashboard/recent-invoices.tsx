@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2 } from "lucide-react";
-import { InvoiceStatus } from "@/components/invoices/invoice-card";
+import { InvoiceStatus } from "@/components/invoices/invoice-layout";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { formatDate, formatEuro } from "@/lib/format";
 import { Skeleton } from "../ui/skeleton";
+import { statusConfig } from "../invoices/invoice-card";
 
 export interface InvoiceData {
   id: string;
@@ -73,19 +73,6 @@ export function RecentInvoices() {
 
     fetchRecentInvoices();
   }, []);
-
-  const statusConfig: Record<
-    InvoiceStatus,
-    {
-      label: string;
-      variant: "default" | "secondary" | "destructive" | "outline";
-    }
-  > = {
-    draft: { label: "Draft", variant: "outline" },
-    sent: { label: "Sent", variant: "default" },
-    paid: { label: "Paid", variant: "secondary" },
-    overdue: { label: "Overdue", variant: "destructive" },
-  };
 
   function RecentInvoiceSkeleton() {
     return (

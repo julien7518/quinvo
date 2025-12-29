@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Calendar, User } from "lucide-react";
 import { formatEuro, formatDate } from "@/lib/format";
 import Link from "next/link";
-
-export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
+import { InvoiceStatus } from "./invoice-layout";
 
 export interface InvoiceCardData {
   id: string;
@@ -19,7 +18,7 @@ export interface InvoiceCardData {
   status: InvoiceStatus;
 }
 
-const statusConfig: Record<
+export const statusConfig: Record<
   InvoiceStatus,
   {
     label: string;

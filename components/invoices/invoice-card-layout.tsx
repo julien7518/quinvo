@@ -10,6 +10,7 @@ import {
 import { SearchBar } from "../search-bar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { formatDate, formatEuro } from "@/lib/format";
 
 export function InvoiceLayout() {
   const supabase = createClient();
@@ -71,25 +72,12 @@ export function InvoiceLayout() {
     // Match texte (numéro ou client)
     const matchesText =
       invoice.invoice_number.toLowerCase().includes(term) ||
-      (invoice.client_name?.toLowerCase().includes(term) ?? false);
+      (invoice.client_name?.toLowerCase().includes(term) ?? false) ||
+      formatEuro(invoice.total_amount).toLowerCase().includes(term) ||
+      formatDate(invoice.issue_date).toLowerCase().includes(term) ||
+      formatDate(invoice.due_date).toLowerCase().includes(term);
 
-    // Match total si le terme est un nombre
-    const termNumber = parseFloat(searchTerm);
-    const matchesTotal = !isNaN(termNumber)
-      ? invoice.total_amount === termNumber
-      : false;
-
-    // Match dates
-    const matchesDate = (() => {
-      if (!term) return false;
-
-      const issue = new Date(invoice.issue_date).toISOString().slice(0, 10);
-      const due = new Date(invoice.due_date).toISOString().slice(0, 10);
-
-      return issue.includes(term) || due.includes(term);
-    })();
-
-    return matchesText || matchesTotal || matchesDate;
+    return matchesText;
   });
 
   return (
