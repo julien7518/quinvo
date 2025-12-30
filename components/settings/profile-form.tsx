@@ -122,7 +122,7 @@ export function ProfileForm() {
         </p>
       </div>
       <form onSubmit={handleSave} className="space-y-6 max-w-xl flex-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex gap-4">
           <div>
             <Label>First name</Label>
             <Input

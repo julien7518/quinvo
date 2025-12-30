@@ -35,6 +35,8 @@ function InvoicePageContent() {
   const [issuer, setIssuer] = useState<Issuer | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [errors, setErrors] = useState<Errors>({});
+  const [iban, setIban] = useState("");
+  const [bic, setBic] = useState("");
 
   const params = useParams();
   const invoiceId =
@@ -52,6 +54,18 @@ function InvoicePageContent() {
       if (user) cachedUserRef.current = user;
       const userId = user?.id;
       if (!userId) return;
+
+      const { data, error: bankError } = await supabase
+        .from("user_bank_details")
+        .select("iban, bic")
+        .eq("user_id", userId)
+        .single();
+
+      if (bankError) throw bankError;
+
+      const { iban, bic } = data;
+      setIban(iban);
+      setBic(bic);
 
       // Fetch invoice
       const { data: invoiceData, error: invoiceError } = await supabase
@@ -321,6 +335,8 @@ function InvoicePageContent() {
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
           isSaving={isSaving}
+          iban={iban}
+          bic={bic}
         />
       ) : (
         <div className="flex justify-center items-center">

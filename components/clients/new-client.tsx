@@ -26,7 +26,7 @@ import { Textarea } from "../ui/textarea";
 import { SiretInput } from "../siret-input";
 import { CompanyNameInput } from "../company-input";
 import { AddressInput } from "../address-input";
-import { useInputValidation } from "@/hook/useInputValidation";
+import { useInputValidation } from "@/hooks/useInputValidation";
 
 interface NewClientProps {
   onClientAdded?: () => void;

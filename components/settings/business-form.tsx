@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SiretInput } from "../siret-input";
-import { useInputValidation, ClientErrors } from "@/hook/useInputValidation";
+import { useInputValidation, ClientErrors } from "@/hooks/useInputValidation";
 import { cn } from "@/lib/utils";
 import { formatSiret } from "@/lib/format";
+import { PostgrestError } from "@supabase/supabase-js";
 
 type UrssafMode = "monthly" | "quarterly";
 
@@ -30,6 +31,9 @@ function formatFrenchPhone(value: string) {
 
 export function BusinessForm() {
   const supabase = createClient();
+
+  const ibanRef = useRef<HTMLInputElement>(null);
+  const bicRef = useRef<HTMLInputElement>(null);
 
   // Editable (temp)
   const [urssafMode, setUrssafMode] = useState<UrssafMode>("monthly");
@@ -48,9 +52,6 @@ export function BusinessForm() {
 
   const { errors, validateClientForm } = useInputValidation();
 
-  /* ────────────────────────────
-     LOAD INITIAL DATA (ONCE)
-     ──────────────────────────── */
   useEffect(() => {
     const load = async () => {
       const {
@@ -80,9 +81,6 @@ export function BusinessForm() {
     load();
   }, []);
 
-  /* ────────────────────────────
-     SAVE
-     ──────────────────────────── */
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -104,24 +102,42 @@ export function BusinessForm() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
 
+      const iban = ibanRef.current?.value;
+      const bic = bicRef.current?.value;
+
       const updates: Record<string, any> = {};
+      const bankUpdates: Record<string, string> = {};
 
       if (urssafMode) updates.declaration_mode = urssafMode;
       if (siret && siret !== initialSiret) updates.siret = siret;
       if (phone && phone !== initialPhone) updates.phone = phone;
       if (address && address !== initialAddress) updates.address = address;
+      if (iban) bankUpdates.iban = iban;
+      if (bic) bankUpdates.bic = bic;
 
       if (!Object.keys(updates).length) {
         setLoading(false);
         return;
       }
 
-      const { error } = await supabase
+      const { error: profileError } = await supabase
         .from("profiles")
         .update(updates)
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      if (!Object.keys(bankUpdates).length) {
+        setLoading(false);
+        return;
+      }
+
+      const { error: bankError } = await supabase
+        .from("user_bank_details")
+        .update(bankUpdates)
+        .eq("user_id", user.id);
+
+      if (bankError) throw bankError;
 
       // ✅ update placeholders
       if (updates.siret) setInitialSiret(siret);
@@ -132,18 +148,19 @@ export function BusinessForm() {
       setSiret("");
       setPhone("");
       setAddress("");
+      if (ibanRef.current) ibanRef.current.value = "";
+      if (bicRef.current) bicRef.current.value = "";
 
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(
+        err instanceof PostgrestError ? err.message : "An error occurred"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  /* ────────────────────────────
-     RENDER
-     ──────────────────────────── */
   return (
     <div className="flex-col md:flex md:flex-row justify-between">
       <div className="w-full md:w-64 flex-shrink-0 mb-8">
@@ -220,6 +237,21 @@ export function BusinessForm() {
             placeholder={initialAddress}
             onChange={(e) => setAddress(e.target.value)}
           />
+        </div>
+
+        <div className="flex gap-4">
+          <div>
+            <Label>IBAN</Label>
+            <Input
+              ref={ibanRef}
+              className="mt-1"
+              placeholder="FR00 1234 5678 9123 4567 8912 345"
+            />
+          </div>
+          <div>
+            <Label>BIC</Label>
+            <Input ref={bicRef} className="mt-1" placeholder="BANKFR00" />
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
