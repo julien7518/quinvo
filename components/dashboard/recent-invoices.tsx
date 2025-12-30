@@ -9,6 +9,8 @@ import { formatDate, formatEuro } from "@/lib/format";
 import { Skeleton } from "../ui/skeleton";
 import { statusConfig } from "../invoices/invoice-card";
 import { ScrollArea } from "../ui/scroll-area";
+import { ArrowDown } from "lucide-react";
+import Link from "next/link";
 
 export interface InvoiceData {
   id: string;
@@ -110,40 +112,45 @@ export function RecentInvoices() {
           ))}
         </div>
       ) : invoices.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
+        <div className="flex flex-col items-center p-6 text-muted-foreground">
           <p className="text-sm">No invoices found</p>
         </div>
       ) : (
-        <ScrollArea className="pb-2 h-82">
-          {invoices.map((invoice, index) => (
-            <div
-              key={invoice.id}
-              className={`px-4 py-2 hover:bg-accent/50 transition-colors cursor-pointer ${
-                index !== invoices.length - 1 ? "border-b" : ""
-              }`}
-            >
-              <div className="flex-col">
-                <div className="flex items-center justify-between">
-                  <strong>{invoice.client_name}</strong>
-                  <p>{formatEuro(invoice.total_amount)}</p>
+        <div>
+          <ScrollArea className="pb-2 h-82">
+            {invoices.map((invoice, index) => (
+              <Link key={invoice.id} href={`/invoices/view/${invoice.id}`}>
+                <div
+                  className={`px-4 py-2 hover:bg-accent/50 transition-colors border-b ${
+                    index !== invoices.length - 1 ? "border-b" : ""
+                  }`}
+                >
+                  <div className="flex-col">
+                    <div className="flex items-center justify-between">
+                      <strong>{invoice.client_name}</strong>
+                      <p>{formatEuro(invoice.total_amount)}</p>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      {invoice.invoice_number}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      {formatDate(invoice.due_date)}
+                      <Badge
+                        variant={statusConfig[invoice.status].variant}
+                        className="text-xs"
+                      >
+                        {statusConfig[invoice.status].label}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  {invoice.invoice_number}
-                </div>
-                <div className="flex items-center justify-between">
-                  {formatDate(invoice.due_date)}
-
-                  <Badge
-                    variant={statusConfig[invoice.status].variant}
-                    className="text-xs"
-                  >
-                    {statusConfig[invoice.status].label}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          ))}
-        </ScrollArea>
+              </Link>
+            ))}
+          </ScrollArea>
+          <div className="flex justify-center w-full">
+            <ArrowDown className="text-muted-foreground mb-2" />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -42,6 +42,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 export interface InvoiceItem {
   id: string;
@@ -125,6 +126,10 @@ export function InvoiceLayout({
 }: InvoiceLayoutProps) {
   function downloadInvoicePDF() {}
 
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
+
   const selectedClient = clients.find((c) => c.id === invoice.client_id);
 
   const subtotal = invoice.items.reduce(
@@ -143,33 +148,48 @@ export function InvoiceLayout({
     onItemsChange(newItems);
   };
 
+  useEffect(() => {
+    function handleResize() {
+      setIsDesktop(window.innerWidth >= 768); // 48rem = 768px
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const Selector = () => {
+    return (
+      <div className="inline-flex justify-around gap-1 border rounded-md p-1">
+        {(["draft", "sent", "paid", "overdue"] as const).map((status) => (
+          <Button
+            key={status}
+            variant={
+              invoice.status === status
+                ? status === "overdue"
+                  ? "destructive"
+                  : "default"
+                : "ghost"
+            }
+            size="sm"
+            onClick={() => onStatusChange(status)}
+          >
+            {status}
+          </Button>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div>
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center mb-2">
         <Link href="/invoices">
           <Button>
             <ChevronLeft />
-            Invoices
+            {isDesktop ? "Invoices" : ""}
           </Button>
         </Link>
-        <div className="flex gap-1 border rounded-md p-1">
-          {(["draft", "sent", "paid", "overdue"] as const).map((status) => (
-            <Button
-              key={status}
-              variant={
-                invoice.status === status
-                  ? status === "overdue"
-                    ? "destructive"
-                    : "default"
-                  : "ghost"
-              }
-              size="sm"
-              onClick={() => onStatusChange(status)}
-            >
-              {status}
-            </Button>
-          ))}
-        </div>
+        {isDesktop ? <Selector /> : <></>}
         <Button
           onClick={mode === "view" ? onEdit : onSave}
           disabled={mode !== "view" && isSaving}
@@ -178,6 +198,9 @@ export function InvoiceLayout({
           {isSaving && <Loader2 className="animate-spin" />}
           {mode === "view" ? "Edit" : "Save"}
         </Button>
+      </div>
+      <div className="flex justify-around md:hidden">
+        <Selector />
       </div>
       <div className="max-w-5xl mx-auto p-10">
         {/* Header */}
@@ -211,7 +234,7 @@ export function InvoiceLayout({
           </div>
 
           {/* Infos perso */}
-          <div className="flex justify-start text-sm">
+          <div className="flex justify-start text-sm mb-4">
             <div className="space-y-1">
               {issuer ? (
                 <>
@@ -489,7 +512,7 @@ export function InvoiceLayout({
         </div>
 
         {/* Total */}
-        <div className="flex justify-between mb-4">
+        <div className="space-y-8 flex-col-reverse flex-col flex md:flex-row justify-between mb-4">
           <div>
             <p className="font-semibold mb-2">
               À payer aux coordonnées suivantes :

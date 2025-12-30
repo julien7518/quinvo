@@ -65,21 +65,23 @@ export function UserProfileSidebar() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="flex w-full items-center justify-between gap-3 px-2 py-6 text-sm"
+          className="flex md:w-full items-center justify-between gap-3 px-2 py-6 text-sm"
         >
           <span className="flex items-center gap-3">
-            <span className="flex size-8 items-center justify-center rounded-full border bg-background text-xs font-medium">
+            {/* Avatar carré toujours visible */}
+            <span className="flex w-8 h-8 items-center justify-center rounded-md border bg-background text-xs font-medium">
               {initials}
             </span>
 
-            <span className="flex flex-col text-left leading-tight">
+            {/* Nom complet : seulement visible md+ */}
+            <span className="hidden md:flex flex-col text-left leading-tight">
               <span className="font-medium">
                 {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
               </span>
             </span>
           </span>
 
-          <ChevronsUpDown className="size-4 text-muted-foreground" />
+          <ChevronsUpDown className="hidden md:flex size-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
 

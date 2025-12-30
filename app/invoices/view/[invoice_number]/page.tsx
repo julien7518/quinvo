@@ -249,22 +249,32 @@ function InvoicePageContent() {
     await supabase.from("invoice_items").delete().eq("invoice_id", invoiceId);
 
     if (invoice && invoice.items && invoice.items.length > 0) {
-      const itemsToInsert = invoice.items.map((item) => ({
-        invoice_id: invoiceData.id,
-        title: item.title,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-      }));
+      const validItems = invoice.items.filter(
+        (item) =>
+          item.title ||
+          item.description ||
+          item.quantity !== 0 ||
+          item.unit_price !== 0
+      );
 
-      const { error: itemsError } = await supabase
-        .from("invoice_items")
-        .insert(itemsToInsert);
+      if (validItems.length > 0) {
+        const itemsToInsert = validItems.map((item) => ({
+          invoice_id: invoiceData.id,
+          title: item.title,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        }));
 
-      if (itemsError) {
-        console.log(itemsError);
-        setIsSaving(false);
-        return;
+        const { error: itemsError } = await supabase
+          .from("invoice_items")
+          .insert(itemsToInsert);
+
+        if (itemsError) {
+          console.log(itemsError);
+          setIsSaving(false);
+          return;
+        }
       }
     }
 

@@ -15,16 +15,17 @@ import { createClient } from "@/lib/supabase/client";
 import { ClientSheet } from "./client-sheet";
 import { SearchBar } from "../search-bar";
 import { NewClient } from "./new-client";
-import { formatSiret } from "@/lib/format";
+import { formatSiret, parsePhone } from "@/lib/format";
 
-interface Client {
+export interface Client {
   id: string;
   company_name: string;
   siret: string;
-  address?: string;
-  emails: string[];
-  phones: string[];
-  notes: string;
+  address: string;
+  emails?: string[];
+  phones?: string[];
+  notes?: string;
+  outstanding_invoices?: number;
 }
 
 export function ClientTable() {
@@ -37,11 +38,13 @@ export function ClientTable() {
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
-    if (!userId) throw new Error("User not found");
+    if (!userId) {
+      console.error("User not found");
+      setLoading(false);
+      return;
+    }
 
-    if (!userId) return;
-
-    const { data, error } = await supabase
+    const { data: clientsData, error: clientsError } = await supabase
       .from("clients")
       .select(
         `
@@ -56,21 +59,44 @@ export function ClientTable() {
       )
       .eq("user_id", userId);
 
-    if (error) {
-      console.error(error);
+    if (clientsError) {
+      console.error(clientsError);
       setLoading(false);
       return;
     }
 
-    const formattedClients: Client[] = (data || []).map((c: any) => ({
-      id: c.id,
-      company_name: c.company_name,
-      siret: c.siret,
-      address: c.address,
-      emails: c.client_emails.map((e: any) => e.email),
-      phones: c.client_phones.map((e: any) => e.phone),
-      notes: c.notes || "",
-    }));
+    // 2. Pour chaque client, récupérer le nombre de factures "overdue"
+    const formattedClients = await Promise.all(
+      (clientsData || []).map(async (c: any) => {
+        const { count, error: invoicesError } = await supabase
+          .from("invoices")
+          .select("*", { count: "exact", head: true })
+          .eq("client_id", c.id)
+          .eq("status", "overdue");
+
+        if (invoicesError) {
+          console.error(invoicesError);
+          return {
+            ...c,
+            emails: c.client_emails.map((e: any) => e.email),
+            phones: c.client_phones.map((e: any) => e.phone),
+            notes: c.notes || "",
+            outstanding_invoices: undefined, // Valeur par défaut en cas d'erreur
+          };
+        }
+
+        return {
+          id: c.id,
+          company_name: c.company_name,
+          siret: c.siret,
+          address: c.address,
+          emails: c.client_emails.map((e: any) => e.email),
+          phones: c.client_phones.map((e: any) => e.phone),
+          notes: c.notes || "",
+          outstanding_invoices: count || undefined,
+        };
+      })
+    );
 
     setClients(formattedClients);
     setLoading(false);
@@ -82,10 +108,16 @@ export function ClientTable() {
 
   const filteredClients = clients.filter((client) => {
     const search = searchTerm.toLowerCase();
+
     return (
       client.company_name.toLowerCase().includes(search) ||
       client.siret.toLowerCase().includes(search) ||
-      client.emails.some((email) => email.toLowerCase().includes(search))
+      client.emails?.some((email) => email.toLowerCase().includes(search)) ||
+      client.phones?.some((phone) =>
+        parsePhone(phone).includes(parsePhone(search))
+      ) ||
+      client.address?.toLowerCase().includes(search) ||
+      client.notes?.toLowerCase().includes(search)
     );
   });
 
@@ -114,7 +146,8 @@ export function ClientTable() {
                 <TableHead>Client</TableHead>
                 <TableHead>Emails</TableHead>
                 <TableHead>SIRET</TableHead>
-                <TableHead />
+                <TableHead>Overdue invoice</TableHead>
+                <TableHead className="sticky right-0 bg-background text-right" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -123,7 +156,7 @@ export function ClientTable() {
                   <TableCell>{client.company_name}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {client.emails.map((email) => (
+                      {client.emails?.map((email) => (
                         <Badge key={email} variant="secondary">
                           {email}
                         </Badge>
@@ -131,7 +164,15 @@ export function ClientTable() {
                     </div>
                   </TableCell>
                   <TableCell>{formatSiret(client.siret)}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
+                    {client.outstanding_invoices ? (
+                      <Badge variant="destructive">
+                        {client.outstanding_invoices}
+                      </Badge>
+                    ) : null}
+                  </TableCell>
+
+                  <TableCell className="sticky right-0 bg-background text-right">
                     <ClientSheet
                       client={client}
                       onClientDeleted={fetchClients}

@@ -39,16 +39,7 @@ import { SiretInput } from "../siret-input";
 import { CompanyNameInput } from "../company-input";
 import { AddressInput } from "../address-input";
 import { useInputValidation } from "@/hook/useInputValidation";
-
-interface Client {
-  id: string;
-  company_name: string;
-  siret: string;
-  address?: string;
-  emails: string[];
-  phones: string[];
-  notes: string;
-}
+import { Client } from "./client-table";
 
 interface ClientSheetProps {
   client: Client;
@@ -100,8 +91,11 @@ export function ClientSheet({
         return;
       }
 
-      if (!formData.emails.includes(email)) {
-        setFormData({ ...formData, emails: [...formData.emails, email] });
+      if (!formData.emails?.includes(email)) {
+        setFormData({
+          ...formData,
+          emails: [...(formData.emails ?? []), email],
+        });
       }
 
       setEmailInput("");
@@ -126,8 +120,8 @@ export function ClientSheet({
         return;
       }
 
-      if (!formData.phones.includes(raw)) {
-        setFormData({ ...formData, phones: [...formData.phones, raw] });
+      if (!formData.phones?.includes(raw)) {
+        setFormData({ ...formData, phones: [...(formData.phones ?? []), raw] });
       }
 
       setPhoneInput("");
@@ -141,14 +135,14 @@ export function ClientSheet({
   const removeEmail = (emailToRemove: string) => {
     setFormData({
       ...formData,
-      emails: formData.emails.filter((email) => email !== emailToRemove),
+      emails: formData.emails?.filter((email) => email !== emailToRemove),
     });
   };
 
   const removePhone = (phoneToRemove: string) => {
     setFormData({
       ...formData,
-      phones: formData.phones.filter((p) => p !== phoneToRemove),
+      phones: formData.phones?.filter((p) => p !== phoneToRemove),
     });
   };
 
@@ -204,14 +198,14 @@ export function ClientSheet({
     }
 
     // Gestion des emails
-    const emailsToDelete = client.emails.filter(
-      (email) => !formData.emails.includes(email)
+    const emailsToDelete = client.emails?.filter(
+      (email) => !formData.emails?.includes(email)
     );
-    const emailsToAdd = formData.emails.filter(
-      (email) => !client.emails.includes(email)
+    const emailsToAdd = formData.emails?.filter(
+      (email) => !client.emails?.includes(email)
     );
 
-    if (emailsToDelete.length > 0) {
+    if (emailsToDelete && emailsToDelete.length > 0) {
       await supabase
         .from("client_emails")
         .delete()
@@ -219,7 +213,7 @@ export function ClientSheet({
         .in("email", emailsToDelete);
     }
 
-    if (emailsToAdd.length > 0) {
+    if (emailsToAdd && emailsToAdd.length > 0) {
       await supabase.from("client_emails").insert(
         emailsToAdd.map((email) => ({
           client_id: client.id,
@@ -229,14 +223,14 @@ export function ClientSheet({
     }
 
     // Gestion des phones
-    const phonesToDelete = client.phones.filter(
-      (phone) => !formData.phones.includes(phone)
+    const phonesToDelete = client.phones?.filter(
+      (phone) => !formData.phones?.includes(phone)
     );
-    const phonesToAdd = formData.phones.filter(
-      (phone) => !client.phones.includes(phone)
+    const phonesToAdd = formData.phones?.filter(
+      (phone) => !client.phones?.includes(phone)
     );
 
-    if (phonesToDelete.length > 0) {
+    if (phonesToDelete && phonesToDelete.length > 0) {
       await supabase
         .from("client_phones")
         .delete()
@@ -244,7 +238,7 @@ export function ClientSheet({
         .in("phone", phonesToDelete);
     }
 
-    if (phonesToAdd.length > 0) {
+    if (phonesToAdd && phonesToAdd.length > 0) {
       await supabase.from("client_phones").insert(
         phonesToAdd.map((phone) => ({
           client_id: client.id,
@@ -334,7 +328,7 @@ export function ClientSheet({
               />
             )}
             <div className="flex flex-wrap gap-2">
-              {formData.emails.map((email) => (
+              {formData.emails?.map((email) => (
                 <Badge key={email} variant="secondary" className="gap-1">
                   {email}
                   {isEditing && (
@@ -363,7 +357,7 @@ export function ClientSheet({
               />
             )}
             <div className="flex flex-wrap gap-2">
-              {formData.phones.map((phone) => (
+              {formData.phones?.map((phone) => (
                 <Badge key={phone} variant="secondary" className="gap-1">
                   0{formatPhone(phone)}
                   {isEditing && (
