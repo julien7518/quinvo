@@ -122,8 +122,8 @@ export function ProfileForm() {
         </p>
       </div>
       <form onSubmit={handleSave} className="space-y-6 max-w-xl flex-1">
-        <div className="flex gap-4">
-          <div>
+        <div className="flex w-full gap-4">
+          <div className="flex-1">
             <Label>First name</Label>
             <Input
               className="mt-1"
@@ -132,7 +132,7 @@ export function ProfileForm() {
               onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
-          <div>
+          <div className="flex-1">
             <Label>Last name</Label>
             <Input
               className="mt-1"

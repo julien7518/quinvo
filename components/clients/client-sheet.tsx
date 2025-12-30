@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { Settings, X } from "lucide-react";
 import {
   isValidEmail,
   isValidPhone,
@@ -62,6 +62,9 @@ export function ClientSheet({
   const [isPhoneValid, setIsPhoneValid] = useState(true);
   const [hasBeenUpdated, setHasBeenUpdated] = useState(false);
   const { errors, validateClientForm, setErrors } = useInputValidation();
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -251,6 +254,15 @@ export function ClientSheet({
     setHasBeenUpdated(true);
   };
 
+  useEffect(() => {
+    function handleResize() {
+      setIsDesktop(window.innerWidth >= 768); // 48rem = 768px
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <Sheet
       onOpenChange={(open) => {
@@ -262,7 +274,7 @@ export function ClientSheet({
     >
       <SheetTrigger asChild>
         <Button variant="outline" size="sm">
-          More
+          {isDesktop ? "More" : <Settings />}
         </Button>
       </SheetTrigger>
       <SheetContent

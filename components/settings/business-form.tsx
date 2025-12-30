@@ -239,8 +239,8 @@ export function BusinessForm() {
           />
         </div>
 
-        <div className="flex gap-4">
-          <div>
+        <div className="flex w-full gap-4">
+          <div className="flex-1">
             <Label>IBAN</Label>
             <Input
               ref={ibanRef}
@@ -248,7 +248,7 @@ export function BusinessForm() {
               placeholder="FR00 1234 5678 9123 4567 8912 345"
             />
           </div>
-          <div>
+          <div className="flex-1">
             <Label>BIC</Label>
             <Input ref={bicRef} className="mt-1" placeholder="BANKFR00" />
           </div>
