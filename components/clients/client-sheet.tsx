@@ -268,7 +268,7 @@ export function ClientSheet({
     >
       <SheetTrigger asChild>
         <Button variant="outline" size="sm">
-          View
+          More
         </Button>
       </SheetTrigger>
       <SheetContent

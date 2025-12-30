@@ -91,7 +91,7 @@ export function ClientTable() {
 
   return (
     <div>
-      <div className="flex flex-row space-x-4 justify-between mb-8">
+      <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 justify-between mb-8">
         <NewClient onClientAdded={fetchClients} />
         <SearchBar
           placeholder="Search for a client"

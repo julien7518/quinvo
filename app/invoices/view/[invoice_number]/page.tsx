@@ -168,8 +168,30 @@ function InvoicePageContent() {
     );
   };
 
-  const handleStatusChange = (status: InvoiceStatus) => {
+  const handleStatusChange = async (status: InvoiceStatus) => {
     setInvoice((prev) => (prev ? { ...prev, status: status } : null));
+    const user = cachedUserRef.current;
+
+    if (!user) {
+      console.log("User not authenticated");
+      setIsSaving(false);
+      return;
+    }
+
+    const { error: invoiceError, data } = await supabase
+      .from("invoices")
+      .update({
+        status: status,
+      })
+      .eq("id", invoiceId)
+      .select()
+      .single();
+
+    if (invoiceError || !data) {
+      console.log(invoiceError);
+      setIsSaving(false);
+      return;
+    }
   };
 
   const handleOnEdit = () => {
@@ -248,7 +270,6 @@ function InvoicePageContent() {
 
     setIsSaving(false);
     setMode("view");
-    console.log(invoice?.issue_date, invoice?.due_date);
   };
 
   const handleDelete = async () => {

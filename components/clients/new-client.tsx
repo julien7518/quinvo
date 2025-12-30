@@ -170,7 +170,7 @@ export function NewClient({ onClientAdded }: NewClientProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>+ New client</Button>
+        <Button className="max-w-2xl">+ New client</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

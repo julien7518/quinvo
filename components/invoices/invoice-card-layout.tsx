@@ -83,12 +83,12 @@ export function InvoiceLayout() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-row space-x-4 justify-between mb-8">
+      <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 justify-between mb-8">
         <Link href={"/invoices/new"}>
-          <Button>+ New invoice</Button>
+          <Button className="w-full max-w-2xl">+ New invoice</Button>
         </Link>
         <SearchBar
-          placeholder="Search for an invoice or client"
+          placeholder="Search for an invoice"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           resultCount={filteredInvoices.length}
@@ -113,7 +113,7 @@ export function InvoiceLayout() {
           )}
 
           {/* Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {filteredInvoices.map((invoice) => (
               <InvoiceCard key={invoice.id} invoice={invoice} />
             ))}

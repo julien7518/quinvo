@@ -114,8 +114,8 @@ export function ProfileForm() {
   };
 
   return (
-    <div className="flex justify-between">
-      <div className="w-64 flex-shrink-0">
+    <div className="flex-col md:flex md:flex-row justify-between">
+      <div className="w-64 flex-shrink-0 mb-8">
         <h2 className="text-lg font-medium">Personal information</h2>
         <p className="text-sm text-muted-foreground">
           Manage your personal information.

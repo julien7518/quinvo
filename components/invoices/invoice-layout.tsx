@@ -295,7 +295,7 @@ export function InvoiceLayout({
         >
           <p className="font-semibold">Date de facture</p>
           {mode === "view" || mode === "edit" ? (
-            <span className="text-left justify-start font-normal px-2">
+            <span className="text-left justify-start font-normal">
               {invoice.issue_date
                 ? format(invoice.issue_date, "dd/MM/yyyy", { locale: fr })
                 : ""}

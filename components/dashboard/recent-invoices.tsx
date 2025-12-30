@@ -8,6 +8,7 @@ import { Separator } from "../ui/separator";
 import { formatDate, formatEuro } from "@/lib/format";
 import { Skeleton } from "../ui/skeleton";
 import { statusConfig } from "../invoices/invoice-card";
+import { ScrollArea } from "../ui/scroll-area";
 
 export interface InvoiceData {
   id: string;
@@ -45,7 +46,7 @@ export function RecentInvoices() {
         )
         .eq("user_id", userId)
         .order("updated_at", { ascending: false })
-        .limit(3);
+        .limit(10);
 
       if (error || !data) {
         setInvoices([]);
@@ -113,7 +114,7 @@ export function RecentInvoices() {
           <p className="text-sm">No invoices found</p>
         </div>
       ) : (
-        <div className="pb-2">
+        <ScrollArea className="pb-2 h-82">
           {invoices.map((invoice, index) => (
             <div
               key={invoice.id}
@@ -142,7 +143,7 @@ export function RecentInvoices() {
               </div>
             </div>
           ))}
-        </div>
+        </ScrollArea>
       )}
     </div>
   );

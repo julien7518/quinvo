@@ -145,8 +145,8 @@ export function BusinessForm() {
      RENDER
      ──────────────────────────── */
   return (
-    <div className="flex justify-between">
-      <div className="w-64 flex-shrink-0">
+    <div className="flex-col md:flex md:flex-row justify-between">
+      <div className="w-full md:w-64 flex-shrink-0 mb-8">
         <h2 className="text-lg font-medium">Business information</h2>
         <p className="text-sm text-muted-foreground">
           Manage your business details and preferences.
@@ -189,13 +189,13 @@ export function BusinessForm() {
             </div>
 
             {phone === "" && (
-              <div className="pointer-events-none absolute left-[5.4rem] top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+              <div className="pointer-events-none absolute left-[5.15rem] md:left-[4.9rem] text-base top-1/2 -translate-y-1/2 text-sm text-muted-foreground md:text-sm">
                 {formatFrenchPhone(initialPhone)}
               </div>
             )}
 
             <Input
-              className={cn("pl-[3.5rem]", errors.phone && "border-red-500")}
+              className={cn("pl-[3rem]", errors.phone && "border-red-500")}
               value={`+33 ${formatFrenchPhone(phone)}`}
               onChange={(e) => {
                 let raw = e.target.value.replace(/\D/g, "");

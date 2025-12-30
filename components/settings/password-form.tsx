@@ -41,8 +41,8 @@ export function PasswordForm() {
   };
 
   return (
-    <div className="flex justify-between">
-      <div className="w-64 flex-shrink-0">
+    <div className="flex-col md:flex md:flex-row justify-between">
+      <div className="w-full md:w-64 flex-shrink-0 mb-8">
         <h2 className="text-lg font-medium">Password</h2>
         <p className="text-sm text-muted-foreground">
           Update your account password.

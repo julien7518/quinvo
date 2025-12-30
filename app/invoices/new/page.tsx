@@ -243,6 +243,7 @@ export default function NewInvoice() {
       .insert({
         user_id: user.id,
         invoice_number: invoice.invoice_number,
+        status: invoice.status,
         issue_date: formatDateForSupabase(invoice.issue_date),
         due_date: formatDateForSupabase(invoice.due_date),
         client_id: invoice.client_id,
