@@ -103,11 +103,13 @@ export function InvoiceLayout() {
         <div>
           {/* Empty states */}
           {invoices.length === 0 && (
-            <div className="text-muted-foreground">No invoices yet.</div>
+            <div className="text-center text-muted-foreground">
+              No invoices yet.
+            </div>
           )}
 
           {invoices.length > 0 && filteredInvoices.length === 0 && (
-            <div className="text-muted-foreground">
+            <div className="text-center text-muted-foreground">
               No invoices match your search.
             </div>
           )}

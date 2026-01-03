@@ -39,15 +39,43 @@ export async function updateSession(request: NextRequest) {
   // with the Supabase client, your users may be randomly logged out.
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
+  const pathname = request.nextUrl.pathname;
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const isAuthRoute = pathname.startsWith("/auth");
+  const isLoginRoute = pathname.startsWith("/login");
+  const isOnboardingRoute = pathname.startsWith("/onboarding");
+
+  if (!user) {
+    if (!isAuthRoute && !isLoginRoute) {
+      // no user, potentially respond by redirecting the user to the login page
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      return NextResponse.redirect(url);
+    }
+
+    return supabaseResponse;
+  }
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("onboarding_completed")
+    .eq("id", user.sub)
+    .single();
+
+  // Sécurité : si le profil n’existe pas ou erreur → onboarding
+  const onboardingCompleted = profile?.onboarding_completed === true;
+
+  // 🟡 Auth OK mais onboarding incomplet
+  if (!onboardingCompleted && !isOnboardingRoute && !isAuthRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/onboarding";
+    return NextResponse.redirect(url);
+  }
+
+  // 🟢 Onboarding terminé → accès interdit à /onboarding
+  if (onboardingCompleted && isOnboardingRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 

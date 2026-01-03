@@ -112,7 +112,7 @@ export function RecentInvoices() {
           ))}
         </div>
       ) : invoices.length === 0 ? (
-        <div className="flex flex-col items-center p-6 text-muted-foreground">
+        <div className="flex justify-center items-center p-6 text-muted-foreground">
           <p className="text-sm">No invoices found</p>
         </div>
       ) : (

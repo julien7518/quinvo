@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OAuthButtons } from "./oauth-buttons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export function LoginForm({
   className,
@@ -89,8 +91,14 @@ export function LoginForm({
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                ) : (
+                  <></>
+                )}
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
+              <OAuthButtons />
             </div>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
