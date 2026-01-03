@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { Plus, Trash2, ChevronLeft, Loader2 } from "lucide-react";
-import { formatEuro, formatPhone, formatSiret } from "@/lib/format";
+import { formatEuro, formatIban, formatPhone, formatSiret } from "@/lib/format";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
@@ -384,7 +384,7 @@ export function InvoiceLayout({
               <Text>
                 Bénéficiaire : {issuer?.first_name} {issuer?.last_name}
               </Text>
-              <Text>IBAN : {iban}</Text>
+              <Text>IBAN : {iban ? formatIban(iban) : ""}</Text>
               <Text>BIC : {bic}</Text>
             </View>
 

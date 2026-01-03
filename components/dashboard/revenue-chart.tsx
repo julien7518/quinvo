@@ -105,6 +105,10 @@ export function RevenueChart() {
           <div className="flex justify-center items-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : chartData.length === 0 ? (
+          <div className="flex justify-center items-center text-sm text-muted-foreground">
+            No revenue for the moment
+          </div>
         ) : (
           <ChartContainer config={chartConfig} className="w-full">
             <AreaChart data={chartData}>

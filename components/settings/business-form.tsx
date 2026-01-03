@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,13 @@ import { Button } from "@/components/ui/button";
 import { SiretInput } from "../siret-input";
 import { useInputValidation, ClientErrors } from "@/hooks/useInputValidation";
 import { cn } from "@/lib/utils";
-import { formatSiret } from "@/lib/format";
+import {
+  formatSiret,
+  formatIban,
+  parseIban,
+  isValidIban,
+  isValidBic,
+} from "@/lib/format";
 import { PostgrestError } from "@supabase/supabase-js";
 
 type UrssafMode = "monthly" | "quarterly";
@@ -32,14 +38,13 @@ function formatFrenchPhone(value: string) {
 export function BusinessForm() {
   const supabase = createClient();
 
-  const ibanRef = useRef<HTMLInputElement>(null);
-  const bicRef = useRef<HTMLInputElement>(null);
-
   // Editable (temp)
   const [urssafMode, setUrssafMode] = useState<UrssafMode>("monthly");
   const [siret, setSiret] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [iban, setIban] = useState("");
+  const [bic, setBic] = useState("");
 
   // Persisted (placeholders)
   const [initialSiret, setInitialSiret] = useState("");
@@ -50,7 +55,7 @@ export function BusinessForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { errors, validateClientForm } = useInputValidation();
+  const { errors, validateClientForm, setErrors } = useInputValidation();
 
   useEffect(() => {
     const load = async () => {
@@ -94,6 +99,21 @@ export function BusinessForm() {
       return;
     }
 
+    const bankErrors: any = {};
+
+    if (iban && !isValidIban(iban)) {
+      bankErrors.iban = "Please enter a valid IBAN";
+    }
+
+    if (bic && !isValidBic(bic)) {
+      bankErrors.bic = "Please enter a valid BIC";
+    }
+
+    if (Object.keys(bankErrors).length > 0) {
+      setErrors(bankErrors);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -102,8 +122,8 @@ export function BusinessForm() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
 
-      const iban = ibanRef.current?.value;
-      const bic = bicRef.current?.value;
+      const ibanValue = iban;
+      const bicValue = bic;
 
       const updates: Record<string, any> = {};
       const bankUpdates: Record<string, string> = {};
@@ -112,8 +132,8 @@ export function BusinessForm() {
       if (siret && siret !== initialSiret) updates.siret = siret;
       if (phone && phone !== initialPhone) updates.phone = phone;
       if (address && address !== initialAddress) updates.address = address;
-      if (iban) bankUpdates.iban = iban;
-      if (bic) bankUpdates.bic = bic;
+      if (ibanValue) bankUpdates.iban = ibanValue;
+      if (bicValue) bankUpdates.bic = bicValue;
 
       if (!Object.keys(updates).length) {
         setLoading(false);
@@ -148,8 +168,8 @@ export function BusinessForm() {
       setSiret("");
       setPhone("");
       setAddress("");
-      if (ibanRef.current) ibanRef.current.value = "";
-      if (bicRef.current) bicRef.current.value = "";
+      setIban("");
+      setBic("");
 
       setSuccess(true);
     } catch (err) {
@@ -243,14 +263,28 @@ export function BusinessForm() {
           <div className="flex-1">
             <Label>IBAN</Label>
             <Input
-              ref={ibanRef}
-              className="mt-1"
+              className={cn("mt-1", (errors as any).iban && "border-red-500")}
               placeholder="FR00 1234 5678 9123 4567 8912 345"
+              value={iban ? formatIban(iban) : ""}
+              onChange={(e) => setIban(parseIban(e.target.value))}
             />
+            {(errors as any).iban && (
+              <p className="mt-1 text-sm text-red-500">
+                {(errors as any).iban}
+              </p>
+            )}
           </div>
           <div className="flex-1">
             <Label>BIC</Label>
-            <Input ref={bicRef} className="mt-1" placeholder="BANKFR00" />
+            <Input
+              className={cn("mt-1", (errors as any).bic && "border-red-500")}
+              placeholder="BANKFR00"
+              value={bic}
+              onChange={(e) => setBic(e.target.value.toUpperCase())}
+            />
+            {(errors as any).bic && (
+              <p className="mt-1 text-sm text-red-500">{(errors as any).bic}</p>
+            )}
           </div>
         </div>
 

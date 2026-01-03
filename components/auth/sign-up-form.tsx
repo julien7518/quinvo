@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OAuthButtons } from "./oauth-buttons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export function SignUpForm({
   className,
@@ -22,7 +24,7 @@ export function SignUpForm({
 }: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -33,7 +35,7 @@ export function SignUpForm({
     setIsLoading(true);
     setError(null);
 
-    if (password !== repeatPassword) {
+    if (password !== confirmPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
       return;
@@ -48,7 +50,7 @@ export function SignUpForm({
         },
       });
       if (error) throw error;
-      router.push("/auth/sign-up-success");
+      router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -92,21 +94,27 @@ export function SignUpForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
                 </div>
                 <Input
-                  id="repeat-password"
+                  id="confirm-password"
                   type="password"
                   placeholder="StrongPassword123!"
                   required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
+                {isLoading ? (
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                ) : (
+                  <></>
+                )}
+                {isLoading ? "Creating your account..." : "Sign up"}
               </Button>
+              <OAuthButtons />
             </div>
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}
