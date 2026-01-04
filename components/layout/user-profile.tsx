@@ -16,14 +16,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sun,
-  Moon,
-  Laptop,
-  ChevronsUpDown,
-  LogOut,
-  ExternalLink,
-} from "lucide-react";
+import { Sun, Moon, Laptop, ChevronsUpDown, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 
@@ -98,10 +91,7 @@ export function UserProfileSidebar() {
           <span className="text-xs text-muted-foreground">{user?.email}</span>
         </DropdownMenuLabel>
         <Link href="mailto:julien.f2004@icloud.com">
-          <DropdownMenuItem>
-            Contact us
-            <ExternalLink className="size-1" />
-          </DropdownMenuItem>
+          <DropdownMenuItem>Contact us</DropdownMenuItem>
         </Link>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>Theme</DropdownMenuSubTrigger>

@@ -27,7 +27,7 @@ export function ProfileForm() {
       const user = data.user;
       if (!user) return;
 
-      const userId = user.id; // ID du user courant
+      const userId = user.id;
 
       // 1️⃣ Charger l'email depuis auth
       setInitialEmail(user.email ?? "");
@@ -36,7 +36,7 @@ export function ProfileForm() {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("first_name, last_name")
-        .eq("id", userId) // <- essentiel pour RLS
+        .eq("id", userId)
         .single();
 
       if (profileError) return;

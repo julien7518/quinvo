@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { ClientSheet } from "./client-sheet";
-import { SearchBar } from "../search-bar";
+import { SearchBar } from "@/components/search-bar";
 import { NewClient } from "./new-client";
 import { formatSiret, parsePhone } from "@/lib/format";
 

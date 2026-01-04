@@ -22,11 +22,11 @@ import {
   formatPhone,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Textarea } from "../ui/textarea";
-import { SiretInput } from "../siret-input";
-import { CompanyNameInput } from "../company-input";
-import { AddressInput } from "../address-input";
-import { useInputValidation } from "@/hooks/useInputValidation";
+import { Textarea } from "@/components/ui/textarea";
+import { SiretInput } from "@/components/siret-input";
+import { CompanyNameInput } from "@/components/company-input";
+import { AddressInput } from "@/components/address-input";
+import { useInputValidation } from "@/hooks/use-input-validation";
 
 interface NewClientProps {
   onClientAdded?: () => void;

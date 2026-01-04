@@ -7,7 +7,7 @@ import {
   InvoiceCard,
   InvoiceCardData,
 } from "@/components/invoices/invoice-card";
-import { SearchBar } from "../search-bar";
+import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { formatDate, formatEuro } from "@/lib/format";

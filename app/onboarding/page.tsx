@@ -26,7 +26,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { SiretInput } from "@/components/siret-input";
 import { AddressInput } from "@/components/address-input";
-import { useInputValidation } from "@/hooks/useInputValidation";
+import { useInputValidation } from "@/hooks/use-input-validation";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
