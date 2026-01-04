@@ -35,10 +35,10 @@ import {
   formatPhone,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { SiretInput } from "../siret-input";
-import { CompanyNameInput } from "../company-input";
-import { AddressInput } from "../address-input";
-import { useInputValidation } from "@/hooks/useInputValidation";
+import { SiretInput } from "@/components/siret-input";
+import { CompanyNameInput } from "@/components/company-input";
+import { AddressInput } from "@/components/address-input";
+import { useInputValidation } from "@/hooks/use-input-validation";
 import { Client } from "./client-table";
 
 interface ClientSheetProps {

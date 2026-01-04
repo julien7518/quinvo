@@ -9,6 +9,7 @@ interface Invoice {
   id: string;
   status: string;
   total_amount: number;
+  issue_date: string;
 }
 
 export function KpiLayout() {
@@ -37,7 +38,9 @@ export function KpiLayout() {
       // 2️⃣ Récupérer les factures
       const { data, error } = await supabase
         .from("invoices")
-        .select("id, status, invoice_items ( quantity, unit_price )");
+        .select(
+          "id, status, invoice_items ( quantity, unit_price ), issue_date"
+        );
 
       if (error) {
         console.error(error);
@@ -47,6 +50,7 @@ export function KpiLayout() {
       const invoices: Invoice[] = data.map((invoice: any) => ({
         id: invoice.id,
         status: invoice.status,
+        issue_date: invoice.issue_date,
         total_amount: invoice.invoice_items.reduce(
           (acc: number, item: any) => acc + item.quantity * item.unit_price,
           0
@@ -70,14 +74,26 @@ export function KpiLayout() {
 
       const pendingCount = pendingInvoices.length;
 
-      // To Declare = toutes les factures émises (sent ou overdue) selon le declaration_mode
-      // Pour l'instant, on fait juste la somme totale, mais on pourrait filtrer par période (monthly / quarterly)
+      // To Declare = toutes les factures émises (sent, paid ou overdue) selon le declaration_mode
+      const now = new Date();
+      let startDate: Date;
+
+      if (declarationMode === "monthly") {
+        // Depuis le 1er du mois en cours
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else {
+        // Depuis le début du trimestre en cours
+        const currentQuarter = Math.floor(now.getMonth() / 3);
+        startDate = new Date(now.getFullYear(), currentQuarter * 3, 1);
+      }
+
       const toDeclareAmount = invoices
         .filter(
           (inv) =>
-            inv.status === "paid" ||
-            inv.status === "sent" ||
-            inv.status === "overdue"
+            (inv.status === "paid" ||
+              inv.status === "sent" ||
+              inv.status === "overdue") &&
+            new Date(inv.issue_date) >= startDate
         )
         .reduce((sum, inv) => sum + inv.total_amount, 0);
 

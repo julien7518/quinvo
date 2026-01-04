@@ -12,7 +12,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { Separator } from "../ui/separator";
+import { Separator } from "@/components/ui/separator";
 import { UserProfileSidebar } from "./user-profile";
 
 const nav = [

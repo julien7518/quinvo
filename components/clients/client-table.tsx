@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { ClientSheet } from "./client-sheet";
-import { SearchBar } from "../search-bar";
+import { SearchBar } from "@/components/search-bar";
 import { NewClient } from "./new-client";
 import { formatSiret, parsePhone } from "@/lib/format";
 
@@ -165,11 +165,11 @@ export function ClientTable() {
                   </TableCell>
                   <TableCell>{formatSiret(client.siret)}</TableCell>
                   <TableCell className="text-center">
-                    {client.outstanding_invoices ? (
+                    {client.outstanding_invoices && (
                       <Badge variant="destructive">
                         {client.outstanding_invoices}
                       </Badge>
-                    ) : null}
+                    )}
                   </TableCell>
 
                   <TableCell className="sticky right-0 bg-background text-right">

@@ -26,7 +26,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { SiretInput } from "@/components/siret-input";
 import { AddressInput } from "@/components/address-input";
-import { useInputValidation } from "@/hooks/useInputValidation";
+import { useInputValidation } from "@/hooks/use-input-validation";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
@@ -350,9 +350,9 @@ export default function OnBoarding() {
                 <Button type="submit">Continue</Button>
               ) : (
                 <Button type="submit" disabled={loading}>
-                  {loading ? (
+                  {loading && (
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  ) : null}
+                  )}
                   {loading ? "Saving..." : "Finish"}
                 </Button>
               )}

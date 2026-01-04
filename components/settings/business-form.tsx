@@ -12,8 +12,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { SiretInput } from "../siret-input";
-import { useInputValidation, ClientErrors } from "@/hooks/useInputValidation";
+import { SiretInput } from "@/components/siret-input";
+import { useInputValidation, ClientErrors } from "@/hooks/use-input-validation";
 import { cn } from "@/lib/utils";
 import {
   formatSiret,
@@ -23,6 +23,7 @@ import {
   isValidBic,
 } from "@/lib/format";
 import { PostgrestError } from "@supabase/supabase-js";
+import { AddressInput } from "@/components/address-input";
 
 type UrssafMode = "monthly" | "quarterly";
 
@@ -135,29 +136,31 @@ export function BusinessForm() {
       if (ibanValue) bankUpdates.iban = ibanValue;
       if (bicValue) bankUpdates.bic = bicValue;
 
-      if (!Object.keys(updates).length) {
+      // Vérifier s'il y a des changements à sauvegarder
+      if (!Object.keys(updates).length && !Object.keys(bankUpdates).length) {
         setLoading(false);
         return;
       }
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", user.id);
+      // Mettre à jour le profil si nécessaire
+      if (Object.keys(updates).length) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update(updates)
+          .eq("id", user.id);
 
-      if (profileError) throw profileError;
-
-      if (!Object.keys(bankUpdates).length) {
-        setLoading(false);
-        return;
+        if (profileError) throw profileError;
       }
 
-      const { error: bankError } = await supabase
-        .from("user_bank_details")
-        .update(bankUpdates)
-        .eq("user_id", user.id);
+      // Mettre à jour les infos bancaires si nécessaire
+      if (Object.keys(bankUpdates).length) {
+        const { error: bankError } = await supabase
+          .from("user_bank_details")
+          .update(bankUpdates)
+          .eq("user_id", user.id);
 
-      if (bankError) throw bankError;
+        if (bankError) throw bankError;
+      }
 
       // ✅ update placeholders
       if (updates.siret) setInitialSiret(siret);
@@ -249,15 +252,13 @@ export function BusinessForm() {
         </div>
 
         {/* ADDRESS */}
-        <div>
-          <Label>Business address</Label>
-          <Input
-            className="mt-1"
-            value={address}
-            placeholder={initialAddress}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </div>
+        <AddressInput
+          value={address}
+          placeholder={initialAddress}
+          onChange={(value) => {
+            setAddress(value);
+          }}
+        />
 
         <div className="flex w-full gap-4">
           <div className="flex-1">
