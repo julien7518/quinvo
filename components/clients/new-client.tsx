@@ -109,6 +109,44 @@ export function NewClient({ onClientAdded }: NewClientProps) {
   };
 
   const handleSave = async () => {
+    // Build final emails list (avoid async state race)
+    let finalEmails = [...emails];
+
+    if (emailInput.trim()) {
+      const email = emailInput.trim().toLowerCase();
+
+      if (!isValidEmail(email)) {
+        setIsEmailValid(false);
+        return;
+      }
+
+      if (!finalEmails.includes(email)) {
+        finalEmails.push(email);
+      }
+
+      setEmailInput("");
+      setIsEmailValid(true);
+    }
+
+    // Build final phones list (avoid async state race)
+    let finalPhones = [...phones];
+
+    if (phoneInput.trim()) {
+      const raw = parsePhone(phoneInput);
+
+      if (!raw || !isValidPhone(raw)) {
+        setIsPhoneValid(false);
+        return;
+      }
+
+      if (!finalPhones.includes(raw)) {
+        finalPhones.push(raw);
+      }
+
+      setPhoneInput("");
+      setIsPhoneValid(true);
+    }
+
     if (
       !validateClientForm({
         company: newCompany,
@@ -139,9 +177,9 @@ export function NewClient({ onClientAdded }: NewClientProps) {
       return;
     }
 
-    if (emails.length > 0) {
+    if (finalEmails.length > 0) {
       const { error: emailError } = await supabase.from("client_emails").insert(
-        emails.map((email) => ({
+        finalEmails.map((email) => ({
           client_id: clientData.id,
           email,
         }))
@@ -149,9 +187,9 @@ export function NewClient({ onClientAdded }: NewClientProps) {
       if (emailError) console.error(emailError);
     }
 
-    if (phones.length > 0) {
+    if (finalPhones.length > 0) {
       await supabase.from("client_phones").insert(
-        phones.map((phone) => ({
+        finalPhones.map((phone) => ({
           client_id: clientData.id,
           phone,
         }))

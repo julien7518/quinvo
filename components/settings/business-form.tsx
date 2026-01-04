@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import {
   isValidBic,
 } from "@/lib/format";
 import { PostgrestError } from "@supabase/supabase-js";
+import { AddressInput } from "../address-input";
 
 type UrssafMode = "monthly" | "quarterly";
 
@@ -249,15 +250,13 @@ export function BusinessForm() {
         </div>
 
         {/* ADDRESS */}
-        <div>
-          <Label>Business address</Label>
-          <Input
-            className="mt-1"
-            value={address}
-            placeholder={initialAddress}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </div>
+        <AddressInput
+          value={address}
+          placeholder={initialAddress}
+          onChange={(value) => {
+            setAddress(value);
+          }}
+        />
 
         <div className="flex w-full gap-4">
           <div className="flex-1">
