@@ -11,6 +11,7 @@ import { statusConfig } from "@/components/invoices/invoice-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowDown } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export interface InvoiceData {
   id: string;
@@ -117,7 +118,9 @@ export function RecentInvoices() {
         </div>
       ) : (
         <div>
-          <ScrollArea className="pb-2 h-82">
+          <ScrollArea
+            className={cn("pb-2", invoices.length > 3 ? "h-72" : "h-fit")}
+          >
             {invoices.map((invoice, index) => (
               <Link key={invoice.id} href={`/invoices/view/${invoice.id}`}>
                 <div

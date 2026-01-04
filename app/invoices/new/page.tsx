@@ -113,26 +113,39 @@ export default function NewInvoice() {
 
       if (!userId) return;
 
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const prefix = `${year}-${month}`;
 
-      const { count, error: invoicesCountError } = await supabase
+      const { data: lastInvoice, error: lastInvoiceError } = await supabase
         .from("invoices")
-        .select("*", { count: "exact", head: true })
+        .select("invoice_number")
         .eq("user_id", userId)
-        .gte("issue_date", startOfMonth.toISOString())
-        .lte("issue_date", endOfMonth.toISOString());
+        .like("invoice_number", `${prefix}-%`)
+        .order("invoice_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (!invoicesCountError && typeof count === "number") {
-        const sequence = String(count + 1).padStart(3, "0");
-        const invoiceNumber = `${year}-${month}-${sequence}`;
+      if (lastInvoiceError) {
+        console.log(lastInvoiceError);
+      } else {
+        let nextNumber = 1;
+
+        if (lastInvoice?.invoice_number) {
+          const lastSequence = parseInt(
+            lastInvoice.invoice_number.split("-")[2],
+            10
+          );
+          if (!isNaN(lastSequence)) {
+            nextNumber = lastSequence + 1;
+          }
+        }
+
+        const sequence = String(nextNumber).padStart(3, "0");
+        const invoiceNumber = `${prefix}-${sequence}`;
 
         setInvoice((prev) => ({
           ...prev,
           invoice_number: invoiceNumber,
         }));
-      } else if (invoicesCountError) {
-        console.log(invoicesCountError);
       }
 
       const { data: issuerData, error: issuerError } = await supabase
