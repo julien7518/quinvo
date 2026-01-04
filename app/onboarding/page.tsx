@@ -350,9 +350,9 @@ export default function OnBoarding() {
                 <Button type="submit">Continue</Button>
               ) : (
                 <Button type="submit" disabled={loading}>
-                  {loading ? (
+                  {loading && (
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  ) : null}
+                  )}
                   {loading ? "Saving..." : "Finish"}
                 </Button>
               )}

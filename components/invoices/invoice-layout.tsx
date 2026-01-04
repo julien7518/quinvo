@@ -474,7 +474,7 @@ export function InvoiceLayout({
             {isDesktop ? "Invoices" : ""}
           </Button>
         </Link>
-        {isDesktop ? <Selector /> : <></>}
+        {isDesktop && <Selector />}
         <Button
           onClick={mode === "view" ? onEdit : onSave}
           disabled={mode !== "view" && isSaving}
@@ -685,7 +685,7 @@ export function InvoiceLayout({
                   Prix unitaire HT
                 </TableHead>
                 <TableHead className="text-right w-32">Prix total HT</TableHead>
-                {mode === "view" ? <></> : <TableHead className="w-10" />}
+                {!(mode === "view") && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -761,9 +761,7 @@ export function InvoiceLayout({
                   </TableCell>
 
                   {/* Supprimer */}
-                  {mode === "view" ? (
-                    <></>
-                  ) : (
+                  {!(mode === "view") && (
                     <TableCell>
                       <Button
                         size="icon"
@@ -838,7 +836,7 @@ export function InvoiceLayout({
         <Button onClick={() => downloadInvoicePDF({ iban, bic })}>
           Download
         </Button>
-        {mode !== "create" && onDelete ? (
+        {mode !== "create" && onDelete && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">Delete</Button>
@@ -863,8 +861,6 @@ export function InvoiceLayout({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        ) : (
-          <></>
         )}
       </div>
     </div>

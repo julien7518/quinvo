@@ -54,7 +54,7 @@ export function UserProfileSidebar() {
 
   const initials = user
     ? `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase()
-    : "??";
+    : "...";
 
   const signOut = async () => {
     await supabase.auth.signOut();

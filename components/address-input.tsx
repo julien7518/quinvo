@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { Command, CommandList, CommandItem } from "./ui/command";
+import {
+  Command,
+  CommandList,
+  CommandItem,
+  CommandGroup,
+  CommandEmpty,
+} from "./ui/command";
 
 type AddressFeature = {
   properties: {
@@ -121,15 +127,21 @@ export function AddressInput({
       {!disabled && results.length > 0 && (
         <Command className="absolute w-full z-50 h-fit">
           <CommandList>
-            {results.map((r) => {
-              const formatted = `${r.properties.name}, ${r.properties.postcode} ${r.properties.city}`;
+            <CommandEmpty>No address found</CommandEmpty>
+            <CommandGroup heading="Suggested address">
+              {results.map((r) => {
+                const formatted = `${r.properties.name}, ${r.properties.postcode} ${r.properties.city}`;
 
-              return (
-                <CommandItem key={formatted} onSelect={() => selectAddress(r)}>
-                  {formatted}
-                </CommandItem>
-              );
-            })}
+                return (
+                  <CommandItem
+                    key={formatted}
+                    onSelect={() => selectAddress(r)}
+                  >
+                    {formatted}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
           </CommandList>
         </Command>
       )}

@@ -165,11 +165,11 @@ export function ClientTable() {
                   </TableCell>
                   <TableCell>{formatSiret(client.siret)}</TableCell>
                   <TableCell className="text-center">
-                    {client.outstanding_invoices ? (
+                    {client.outstanding_invoices && (
                       <Badge variant="destructive">
                         {client.outstanding_invoices}
                       </Badge>
-                    ) : null}
+                    )}
                   </TableCell>
 
                   <TableCell className="sticky right-0 bg-background text-right">

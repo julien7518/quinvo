@@ -150,11 +150,11 @@ export function RecentInvoices() {
               </Link>
             ))}
           </ScrollArea>
-          {invoices.length > 3 ? (
+          {invoices.length > 3 && (
             <div className="flex justify-center w-full">
               <ArrowDown className="text-muted-foreground mb-2" />
             </div>
-          ) : null}
+          )}
         </div>
       )}
     </div>
