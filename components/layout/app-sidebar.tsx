@@ -10,7 +10,7 @@ import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
 
 const Avenir = localFont({
-  src: "./avenir_medium.ttf",
+  src: "../../public/avenir_medium.ttf",
 });
 
 const nav = [

@@ -143,10 +143,9 @@ export default function OnBoarding() {
     // CONTINUE (steps 1 → 3)
     if (step < 4) {
       let isValid = true;
+      const newErrors: any = {};
 
       if (step === 1) {
-        const newErrors: any = {};
-
         if (firstName.trim().length < 2) {
           newErrors.firstName = "First name must contain at least 2 characters";
         }
@@ -169,10 +168,84 @@ export default function OnBoarding() {
         isValid = validateClientForm({ address, phone });
       }
 
-      if (isValid) {
-        setErrors({});
-        setStep((s) => s + 1);
+      if (!isValid) {
+        return;
       }
+
+      // Try to save to database for steps 2 and 3 (where we have unique constraints)
+      if (step === 2 || step === 3) {
+        setLoading(true);
+        
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error("User error:", userError);
+          setLoading(false);
+          return;
+        }
+
+        // Prepare data to save based on current step
+        const updateData: any = {
+          first_name: firstName,
+          last_name: lastName,
+        };
+
+        if (step === 2) {
+          updateData.siret = siret;
+          updateData.declaration_mode = urssafMode;
+        }
+
+        if (step === 3) {
+          updateData.address = address;
+          updateData.phone = phone;
+        }
+
+        try {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update(updateData)
+            .eq("id", user.id);
+
+          if (profileError) {
+            console.error("Database error:", profileError);
+            
+            // Handle unique constraint violations
+            if (profileError.code === "23505") {
+              // Unique violation error
+              if (profileError.message.includes("siret")) {
+                newErrors.siret = "This SIRET is already registered";
+              } else if (profileError.message.includes("phone")) {
+                newErrors.phone = "This phone number is already registered";
+              } else {
+                newErrors.general = "This information is already registered";
+              }
+              setErrors(newErrors);
+              setLoading(false);
+              return;
+            } else {
+              newErrors.general = "An error occurred while saving";
+              setErrors(newErrors);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Save error:", error);
+          newErrors.general = "An error occurred while saving";
+          setErrors(newErrors);
+          setLoading(false);
+          return;
+        }
+
+        setLoading(false);
+      }
+
+      // If we got here, everything is valid and saved
+      setErrors({});
+      setStep((s) => s + 1);
 
       return;
     }
@@ -287,6 +360,15 @@ export default function OnBoarding() {
               }
             }}
           >
+            {/* General error display */}
+            {(errors as any).general && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">
+                  {(errors as any).general}
+                </p>
+              </div>
+            )}
+
             {/* STEP 1 */}
             {step === 1 && (
               <div className="space-y-6">

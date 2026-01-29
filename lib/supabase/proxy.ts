@@ -18,17 +18,17 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
   // Do not run code between createServerClient and
@@ -42,14 +42,15 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   const isAuthRoute = pathname.startsWith("/auth");
+  const isHomeRoute = pathname.startsWith("/home");
   const isLoginRoute = pathname.startsWith("/login");
   const isOnboardingRoute = pathname.startsWith("/onboarding");
 
   if (!user) {
-    if (!isAuthRoute && !isLoginRoute) {
+    if (!isAuthRoute && !isLoginRoute && !isHomeRoute) {
       // no user, potentially respond by redirecting the user to the login page
       const url = request.nextUrl.clone();
-      url.pathname = "/auth/login";
+      url.pathname = "/home";
       return NextResponse.redirect(url);
     }
 
