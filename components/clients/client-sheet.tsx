@@ -40,6 +40,7 @@ import { CompanyNameInput } from "@/components/company-input";
 import { AddressInput } from "@/components/address-input";
 import { useInputValidation } from "@/hooks/use-input-validation";
 import { Client } from "./client-table";
+import Link from "next/link";
 
 interface ClientSheetProps {
   client: Client;
@@ -347,7 +348,8 @@ export function ClientSheet({
             <div className="flex flex-wrap gap-2">
               {formData.emails?.map((email) => (
                 <Badge key={email} variant="secondary" className="gap-1">
-                  {email}
+                  {!isEditing && <Link href={`mailto:${email}`}>{email}</Link>}
+                  {isEditing && email}
                   {isEditing && (
                     <X
                       className="h-3 w-3 cursor-pointer"

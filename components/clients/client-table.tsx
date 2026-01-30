@@ -16,6 +16,7 @@ import { ClientSheet } from "./client-sheet";
 import { SearchBar } from "@/components/search-bar";
 import { NewClient } from "./new-client";
 import { formatSiret, parsePhone } from "@/lib/format";
+import Link from "next/link";
 
 export interface Client {
   id: string;
@@ -55,7 +56,7 @@ export function ClientTable() {
           client_emails(email),
           client_phones(phone),
           notes
-        `
+        `,
       )
       .eq("user_id", userId);
 
@@ -95,7 +96,7 @@ export function ClientTable() {
           notes: c.notes || "",
           outstanding_invoices: count || undefined,
         };
-      })
+      }),
     );
 
     setClients(formattedClients);
@@ -113,9 +114,6 @@ export function ClientTable() {
       client.company_name.toLowerCase().includes(search) ||
       client.siret.toLowerCase().includes(search) ||
       client.emails?.some((email) => email.toLowerCase().includes(search)) ||
-      client.phones?.some((phone) =>
-        parsePhone(phone).includes(parsePhone(search))
-      ) ||
       client.address?.toLowerCase().includes(search) ||
       client.notes?.toLowerCase().includes(search)
     );
@@ -146,7 +144,7 @@ export function ClientTable() {
                 <TableHead>Client</TableHead>
                 <TableHead>Emails</TableHead>
                 <TableHead>SIRET</TableHead>
-                <TableHead>Overdue invoice</TableHead>
+                <TableHead className="text-center">Overdue invoice</TableHead>
                 <TableHead className="sticky right-0 bg-background text-right" />
               </TableRow>
             </TableHeader>
@@ -158,7 +156,7 @@ export function ClientTable() {
                     <div className="flex flex-wrap gap-1">
                       {client.emails?.map((email) => (
                         <Badge key={email} variant="secondary">
-                          {email}
+                          <Link href={`mailto:${email}`}>{email}</Link>
                         </Badge>
                       ))}
                     </div>
