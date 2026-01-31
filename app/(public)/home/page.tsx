@@ -14,10 +14,10 @@ export default function Home() {
   return (
     <div className="mx-auto max-w-6xl px-6">
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-6 pt-24 text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+      <section className="mx-auto max-w-6xl md:px-6 pt-12 md:pt-24 text-center">
+        <h1 className="text-3xl font-bold tracking-tight md:text-6xl">
           La facturation{" "}
-          <span className="text-primary decoration-foreground underline underline-offset-8 decoration-2">
+          <span className="text-primary decoration-foreground underline underline-offset-3 md:underline-offset-8 decoration-2">
             simplifiée
           </span>
           <br />
@@ -31,7 +31,7 @@ export default function Home() {
         </p>
 
         {/* Video placeholder */}
-        <div className="mx-auto mt-16 aspect-video max-w-4xl rounded-xl border bg-muted flex items-center justify-center text-muted-foreground">
+        <div className="mx-auto mt-12 md:mt-16 aspect-video max-w-4xl rounded-xl border bg-muted flex items-center justify-center text-muted-foreground">
           Vidéo de présentation
         </div>
 
@@ -45,8 +45,8 @@ export default function Home() {
       {/* Features */}
       <section className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Tout ce dont vous avez besoin pour gérer votre activité
+          <h2 className="text-2xl font-bold tracking-tight md:text-5xl">
+            Tout ce dont vous avez besoin <br /> pour gérer votre activité
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
             Quinvo se concentre sur l’essentiel : facturer, suivre et comprendre
