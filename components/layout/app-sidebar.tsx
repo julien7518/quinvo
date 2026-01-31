@@ -6,12 +6,7 @@ import { LayoutDashboard, Users, FileText, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "./user-profile";
 import { Separator } from "@/components/ui/separator";
-import localFont from "next/font/local";
-import { cn } from "@/lib/utils";
-
-const Avenir = localFont({
-  src: "../../public/avenir_medium.ttf",
-});
+import Logo from "../logo";
 
 const nav = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -25,8 +20,8 @@ export function AppSidebar() {
 
   return (
     <aside className="hidden md:flex w-64 border-r p-4 flex-col">
-      <div className={cn("mb-4 ml-2 text-4xl font-black", Avenir.className)}>
-        Quinvo
+      <div className="mb-4 ml-2">
+        <Logo />
       </div>
       <div className="flex-1">
         <nav className="space-y-1 mb-2">
@@ -50,7 +45,9 @@ export function AppSidebar() {
         </div>
         <div>
           <Link href={"/invoices/new"}>
-            <Button className="w-full">+ New invoice</Button>
+            <Button variant="default" className="w-full">
+              + New invoice
+            </Button>
           </Link>
         </div>
       </div>

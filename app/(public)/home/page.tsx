@@ -16,11 +16,13 @@ export default function Home() {
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pt-24 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          La facturation pour <br />
-          <span className={LibreBaker.className}> micro-entrepreneur </span>
-          <span className="underline underline-offset-8 decoration-2">
+          La facturation{" "}
+          <span className="text-primary decoration-foreground underline underline-offset-8 decoration-2">
             simplifiée
           </span>
+          <br />
+          pour
+          <span className={LibreBaker.className}> micro-entrepreneur </span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-muted-foreground">
           Quinvo vous aide à créer, suivre et analyser vos factures et vos

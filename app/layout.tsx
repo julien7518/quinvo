@@ -20,6 +20,17 @@ export const metadata: Metadata = {
   generator: "Next.js",
   creator: "Julien Fernandes",
   publisher: "Julien Fernandes",
+  keywords: [
+    "Quinvo",
+    "facture",
+    "auto-entrepreneur",
+    "micro-entrepreneur",
+    "france",
+    "clients",
+  ],
+  authors: [
+    { name: "Julien Fernandes", url: "https://julien-fernandes.vercel.app" },
+  ],
 
   robots: {
     index: true,
@@ -38,7 +49,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Quinvo – Gestion intelligente pour auto-entrepreneurs",
+        alt: "Quinvo – Facturation simplifiée pour auto-entrepreneurs",
       },
     ],
   },

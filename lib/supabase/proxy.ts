@@ -42,12 +42,16 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   const isAuthRoute = pathname.startsWith("/auth");
+  const isLegalRoute =
+    pathname.startsWith("/legal") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/cgu");
   const isHomeRoute = pathname.startsWith("/home");
   const isLoginRoute = pathname.startsWith("/login");
   const isOnboardingRoute = pathname.startsWith("/onboarding");
 
   if (!user) {
-    if (!isAuthRoute && !isLoginRoute && !isHomeRoute) {
+    if (!isAuthRoute && !isLoginRoute && !isHomeRoute && !isLegalRoute) {
       // no user, potentially respond by redirecting the user to the login page
       const url = request.nextUrl.clone();
       url.pathname = "/home";

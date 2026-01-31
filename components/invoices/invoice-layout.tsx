@@ -130,23 +130,23 @@ export function InvoiceLayout({
   bic,
 }: InvoiceLayoutProps) {
   const [isDesktop, setIsDesktop] = useState(
-    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true,
   );
 
   const selectedClient = clients.find((c) => c.id === invoice.client_id);
 
   const subtotal = invoice.items.reduce(
     (acc, item) => acc + item.quantity * item.unit_price,
-    0
+    0,
   );
 
   const updateItem = (
     id: string,
     field: keyof InvoiceItem,
-    value: string | number
+    value: string | number,
   ) => {
     const newItems = invoice.items.map((item) =>
-      item.id === id ? { ...item, [field]: value } : item
+      item.id === id ? { ...item, [field]: value } : item,
     );
     onItemsChange(newItems);
   };
@@ -282,7 +282,7 @@ export function InvoiceLayout({
   const InvoicePDF = ({ iban, bic }: { iban?: string; bic?: string }) => {
     const subtotal = invoice.items.reduce(
       (sum, item) => sum + item.quantity * item.unit_price,
-      0
+      0,
     );
 
     return (
@@ -505,7 +505,7 @@ export function InvoiceLayout({
                     onChange={(e) => onInvoiceNumberChange(e.target.value)}
                     className={cn(
                       "w-25 h-8 text-xl font-bold",
-                      errors.invoice_number ? "border-red-500" : ""
+                      errors.invoice_number ? "border-red-500" : "",
                     )}
                   />
                 )}
@@ -560,7 +560,7 @@ export function InvoiceLayout({
                     <SelectTrigger
                       className={cn(
                         "font-semibold mb-2",
-                        errors.client ? "border-red-500" : ""
+                        errors.client ? "border-red-500" : "",
                       )}
                     >
                       <SelectValue placeholder="Sélectionner un client" />
@@ -598,7 +598,7 @@ export function InvoiceLayout({
         <div
           className={cn(
             "grid grid-cols-2 grid-rows-2 items-center gap-1 text-sm w-1/2",
-            errors.date ? "" : "mb-4"
+            errors.date ? "" : "mb-4",
           )}
         >
           <p className="font-semibold">Date de facture</p>
@@ -616,7 +616,7 @@ export function InvoiceLayout({
                   className={cn(
                     "w-fit justify-start text-left font-normal px-2",
                     !invoice.issue_date && "text-muted-foreground",
-                    errors.date ? "border-red-500" : ""
+                    errors.date ? "border-red-500" : "",
                   )}
                 >
                   {invoice.issue_date
@@ -649,7 +649,7 @@ export function InvoiceLayout({
                   className={cn(
                     "w-fit justify-start text-left font-normal px-2",
                     !invoice.due_date && "text-muted-foreground",
-                    errors.date ? "border-red-500" : ""
+                    errors.date ? "border-red-500" : "",
                   )}
                 >
                   {invoice.due_date
@@ -781,7 +781,7 @@ export function InvoiceLayout({
         <div
           className={cn(
             "flex justify-end mb-8",
-            mode === "view" ? "hidden" : ""
+            mode === "view" ? "hidden" : "",
           )}
         >
           <Button

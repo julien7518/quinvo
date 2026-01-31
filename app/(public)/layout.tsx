@@ -1,11 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import localFont from "next/font/local";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
+import Logo from "@/components/logo";
 
 const Avenir = localFont({
   src: "../../public/avenir_medium.ttf",
@@ -37,14 +37,7 @@ export default function PublicLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <Link href="/home">
-              <span
-                className={cn(
-                  "text-3xl md:text-4xl font-black",
-                  Avenir.className,
-                )}
-              >
-                Quinvo
-              </span>
+              <Logo />
             </Link>
           </div>
 
