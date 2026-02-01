@@ -11,6 +11,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import {
+  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -29,9 +30,9 @@ interface InvoiceRow {
 const chartConfig = {
   total: {
     label: "Revenue",
-    color: "hsl(var(--chart-1))",
+    color: "var(--primary)",
   },
-};
+} satisfies ChartConfig;
 
 export function RevenueChart() {
   const supabase = createClient();
@@ -64,7 +65,7 @@ export function RevenueChart() {
     data.forEach((inv) => {
       const total_amount = inv.invoice_items.reduce(
         (acc, item) => acc + item.quantity * item.unit_price,
-        0
+        0,
       );
 
       const date = new Date(inv.issue_date);
@@ -72,7 +73,7 @@ export function RevenueChart() {
       if (view === "monthly") {
         key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
           2,
-          "0"
+          "0",
         )}`;
       } else {
         const quarter = Math.floor(date.getMonth() / 3) + 1;

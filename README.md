@@ -1,6 +1,6 @@
 # Quinvo
 
-![Invoices view](screenshots/invoice.png)
+![Invoices view](public/screenshots/dashboard.png)
 
 [quinvo-app.vercel.app](https://quinvo-app.vercel.app)
 
@@ -72,7 +72,6 @@ The goal of Quinvo is to provide a **clean, fast, and intuitive dashboard** that
 - [ ] Advanced analytics
 - [ ] Full site translation
 - [ ] More advanced filter
-- [ ] Connect Google OAuth
 - [ ] Connect Apple OAuth
 - [ ] Enable OTP email verification
 

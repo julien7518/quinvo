@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/drawer";
 import { Separator } from "@/components/ui/separator";
 import { UserProfileSidebar } from "./user-profile";
+import Logo from "../logo";
 
 const nav = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Clients", href: "/client", icon: Users },
+  { label: "Clients", href: "/clients", icon: Users },
   { label: "Invoices", href: "/invoices", icon: FileText },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
@@ -29,7 +30,7 @@ export function MobileTopbar() {
     <div className="md:hidden sticky top-0 z-50 border-b bg-background">
       <div className="flex items-center justify-between px-4 h-14">
         {/* Left */}
-        <div className="text-lg font-semibold">Quinvo</div>
+        <Logo />
 
         {/* Right */}
         <div className="flex items-center gap-3">

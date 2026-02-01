@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -34,7 +34,8 @@ type UrssafMode = "monthly" | "quarterly";
 
 export default function OnBoarding() {
   const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start as loading
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Step 1 – Identity
   const [firstName, setFirstName] = useState("");
@@ -57,16 +58,94 @@ export default function OnBoarding() {
   const supabase = createClient();
   const router = useRouter();
 
+  // Load user profile data on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          // Check URL parameters for step override (from OAuth callback)
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlStep = urlParams.get("step");
+
+          // Load profile data
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+          if (!profileError && profile) {
+            // Set form data from profile
+            if (profile.first_name) setFirstName(profile.first_name);
+            if (profile.last_name) setLastName(profile.last_name);
+            if (profile.phone) setPhone(profile.phone);
+            if (profile.address) setAddress(profile.address);
+            if (profile.siret) setSiret(profile.siret);
+            if (profile.declaration_mode)
+              setUrssafMode(profile.declaration_mode as UrssafMode);
+            if (profile.iban) setIban(profile.iban);
+            if (profile.bic) setBic(profile.bic);
+
+            // Determine the appropriate step
+            let targetStep = 1;
+
+            // If we have basic info and URL says step 2, go to step 2
+            if (urlStep === "2" && profile.first_name && profile.last_name) {
+              targetStep = 2;
+            }
+            // If onboarding is already completed, redirect to dashboard
+            else if (profile.onboarding_completed) {
+              router.push("/");
+              return;
+            }
+            // If we have all required info, go to last step
+            else if (
+              profile.first_name &&
+              profile.last_name &&
+              profile.siret &&
+              profile.address &&
+              profile.phone
+            ) {
+              targetStep = 4;
+            }
+            // If we have basic info, go to step 2
+            else if (profile.first_name && profile.last_name) {
+              targetStep = 2;
+            }
+
+            setStep(targetStep);
+          } else if (urlStep) {
+            // If no profile but URL has step parameter, use it
+            const stepNum = parseInt(urlStep);
+            if (stepNum >= 1 && stepNum <= 4) {
+              setStep(stepNum);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      } finally {
+        setLoading(false);
+        setInitialLoadComplete(true);
+      }
+    };
+
+    loadUserData();
+  }, [router]);
+
   const handleSubmit = async () => {
     if (loading) return;
 
     // CONTINUE (steps 1 → 3)
     if (step < 4) {
       let isValid = true;
+      const newErrors: any = {};
 
       if (step === 1) {
-        const newErrors: any = {};
-
         if (firstName.trim().length < 2) {
           newErrors.firstName = "First name must contain at least 2 characters";
         }
@@ -89,10 +168,84 @@ export default function OnBoarding() {
         isValid = validateClientForm({ address, phone });
       }
 
-      if (isValid) {
-        setErrors({});
-        setStep((s) => s + 1);
+      if (!isValid) {
+        return;
       }
+
+      // Try to save to database for steps 2 and 3 (where we have unique constraints)
+      if (step === 2 || step === 3) {
+        setLoading(true);
+        
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error("User error:", userError);
+          setLoading(false);
+          return;
+        }
+
+        // Prepare data to save based on current step
+        const updateData: any = {
+          first_name: firstName,
+          last_name: lastName,
+        };
+
+        if (step === 2) {
+          updateData.siret = siret;
+          updateData.declaration_mode = urssafMode;
+        }
+
+        if (step === 3) {
+          updateData.address = address;
+          updateData.phone = phone;
+        }
+
+        try {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update(updateData)
+            .eq("id", user.id);
+
+          if (profileError) {
+            console.error("Database error:", profileError);
+            
+            // Handle unique constraint violations
+            if (profileError.code === "23505") {
+              // Unique violation error
+              if (profileError.message.includes("siret")) {
+                newErrors.siret = "This SIRET is already registered";
+              } else if (profileError.message.includes("phone")) {
+                newErrors.phone = "This phone number is already registered";
+              } else {
+                newErrors.general = "This information is already registered";
+              }
+              setErrors(newErrors);
+              setLoading(false);
+              return;
+            } else {
+              newErrors.general = "An error occurred while saving";
+              setErrors(newErrors);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Save error:", error);
+          newErrors.general = "An error occurred while saving";
+          setErrors(newErrors);
+          setLoading(false);
+          return;
+        }
+
+        setLoading(false);
+      }
+
+      // If we got here, everything is valid and saved
+      setErrors({});
+      setStep((s) => s + 1);
 
       return;
     }
@@ -121,9 +274,11 @@ export default function OnBoarding() {
 
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (userError || !user) {
+      console.error("User error:", userError);
       setLoading(false);
       return;
     }
@@ -142,6 +297,7 @@ export default function OnBoarding() {
       .eq("id", user.id);
 
     if (profileError) {
+      console.log(profileError);
       setLoading(false);
       return;
     }
@@ -159,10 +315,21 @@ export default function OnBoarding() {
 
     setLoading(false);
 
-    if (!bankError) {
-      router.push("/");
-    }
+    // Redirect to dashboard on success
+    router.push("/");
   };
+
+  // Show loading state while fetching user data
+  if (loading && !initialLoadComplete) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-lg">Loading your information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen items-center justify-center px-4">
@@ -193,6 +360,15 @@ export default function OnBoarding() {
               }
             }}
           >
+            {/* General error display */}
+            {(errors as any).general && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">
+                  {(errors as any).general}
+                </p>
+              </div>
+            )}
+
             {/* STEP 1 */}
             {step === 1 && (
               <div className="space-y-6">

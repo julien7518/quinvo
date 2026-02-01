@@ -37,15 +37,22 @@ export function AddressInput({
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<AddressFeature[]>([]);
   const [locked, setLocked] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   useEffect(() => {
     if (locked) return;
     setQuery(value);
     setResults([]);
-  }, [value, locked]);
+  }, [value, locked, disabled]);
 
   useEffect(() => {
-    if (!query || locked || disabled) {
+    if (
+      !query ||
+      locked ||
+      disabled ||
+      query.length < 3 ||
+      !hasUserInteracted
+    ) {
       setResults([]);
       return;
     }
@@ -56,9 +63,9 @@ export function AddressInput({
       try {
         const res = await fetch(
           `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(
-            query
+            query,
           )}&limit=5`,
-          { signal: controller.signal }
+          { signal: controller.signal },
         );
 
         if (!res.ok) return;
@@ -74,10 +81,16 @@ export function AddressInput({
       }
     };
 
-    fetchAddresses();
+    // Debounce the API call to avoid excessive requests
+    const debounceTimer = setTimeout(() => {
+      fetchAddresses();
+    }, 300);
 
-    return () => controller.abort();
-  }, [query, locked, disabled]);
+    return () => {
+      controller.abort();
+      clearTimeout(debounceTimer);
+    };
+  }, [query, locked, disabled, hasUserInteracted]);
 
   const selectAddress = (feature: AddressFeature) => {
     const formatted = `${feature.properties.name}, ${feature.properties.postcode} ${feature.properties.city}`;
@@ -96,25 +109,32 @@ export function AddressInput({
         value={query}
         onChange={(e) => {
           const val = e.target.value;
+
+          if (!hasUserInteracted) {
+            setHasUserInteracted(true);
+          }
+
           if (locked && val === query) {
-            // Prevent unlocking or fetching if input value hasn't changed
             return;
           }
+
           if (locked && val !== query) {
-            // User actively changed the input, unlock and update
             setLocked(false);
           }
+
           setQuery(val);
-          if (val !== value) {
+          onChange(val);
+
+          if (val !== value || val.length < 3) {
             setResults([]);
           }
-          onChange(val);
         }}
         onFocus={() => {
-          if (!locked) {
-            // Do nothing, suggestions will show if query is not empty
+          if (!locked && query.length >= 3) {
+            if (!hasUserInteracted) {
+              setHasUserInteracted(true);
+            }
           } else {
-            // If locked, clear suggestions to prevent them showing on focus
             setResults([]);
           }
         }}

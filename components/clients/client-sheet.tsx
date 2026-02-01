@@ -40,6 +40,7 @@ import { CompanyNameInput } from "@/components/company-input";
 import { AddressInput } from "@/components/address-input";
 import { useInputValidation } from "@/hooks/use-input-validation";
 import { Client } from "./client-table";
+import Link from "next/link";
 
 interface ClientSheetProps {
   client: Client;
@@ -63,7 +64,7 @@ export function ClientSheet({
   const [hasBeenUpdated, setHasBeenUpdated] = useState(false);
   const { errors, validateClientForm, setErrors } = useInputValidation();
   const [isDesktop, setIsDesktop] = useState(
-    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true,
   );
 
   const handleEdit = () => {
@@ -202,10 +203,10 @@ export function ClientSheet({
 
     // Gestion des emails
     const emailsToDelete = client.emails?.filter(
-      (email) => !formData.emails?.includes(email)
+      (email) => !formData.emails?.includes(email),
     );
     const emailsToAdd = formData.emails?.filter(
-      (email) => !client.emails?.includes(email)
+      (email) => !client.emails?.includes(email),
     );
 
     if (emailsToDelete && emailsToDelete.length > 0) {
@@ -221,16 +222,16 @@ export function ClientSheet({
         emailsToAdd.map((email) => ({
           client_id: client.id,
           email,
-        }))
+        })),
       );
     }
 
     // Gestion des phones
     const phonesToDelete = client.phones?.filter(
-      (phone) => !formData.phones?.includes(phone)
+      (phone) => !formData.phones?.includes(phone),
     );
     const phonesToAdd = formData.phones?.filter(
-      (phone) => !client.phones?.includes(phone)
+      (phone) => !client.phones?.includes(phone),
     );
 
     if (phonesToDelete && phonesToDelete.length > 0) {
@@ -246,7 +247,7 @@ export function ClientSheet({
         phonesToAdd.map((phone) => ({
           client_id: client.id,
           phone,
-        }))
+        })),
       );
     }
 
@@ -266,9 +267,14 @@ export function ClientSheet({
   return (
     <Sheet
       onOpenChange={(open) => {
-        if (!open && hasBeenUpdated) {
-          onClientUpdated?.();
-          setHasBeenUpdated(false);
+        if (!open) {
+          if (hasBeenUpdated) {
+            onClientUpdated?.();
+            setHasBeenUpdated(false);
+          }
+          if (isEditing) {
+            handleDiscard();
+          }
         }
       }}
     >
@@ -335,14 +341,15 @@ export function ClientSheet({
                 placeholder="Write an email and press space"
                 className={cn(
                   "transition-colors",
-                  !isEmailValid && "text-red-500 placeholder:text-red-400"
+                  !isEmailValid && "text-red-500 placeholder:text-red-400",
                 )}
               />
             )}
             <div className="flex flex-wrap gap-2">
               {formData.emails?.map((email) => (
                 <Badge key={email} variant="secondary" className="gap-1">
-                  {email}
+                  {!isEditing && <Link href={`mailto:${email}`}>{email}</Link>}
+                  {isEditing && email}
                   {isEditing && (
                     <X
                       className="h-3 w-3 cursor-pointer"
@@ -364,7 +371,7 @@ export function ClientSheet({
                 placeholder="Write a phone and press space"
                 className={cn(
                   "transition-colors",
-                  !isPhoneValid && "text-red-500 placeholder:text-red-400"
+                  !isPhoneValid && "text-red-500 placeholder:text-red-400",
                 )}
               />
             )}
