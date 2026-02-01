@@ -25,8 +25,8 @@ export default function Home() {
     if (currentTheme) {
       setDashboardImage(
         currentTheme === "dark"
-          ? "/screenshots/dashboard-dark.png"
-          : "/screenshots/dashboard.png",
+          ? "/screenshots/dashboard-dark.webp"
+          : "/screenshots/dashboard.webp",
       );
       setIsThemeLoaded(true);
     }
@@ -114,14 +114,14 @@ export default function Home() {
             description="Créez des factures professionnelles en quelques secondes, avec clients et suivi de statut."
             large
           >
-            <div className="relative h-full w-full overflow-hidden [perspective:1200px]">
+            {/* <div className="relative h-full w-full overflow-hidden [perspective:1200px]">
               <Image
                 src="/screenshots/invoice-example.png"
                 alt="Exemple d'une facture"
                 fill
                 className="rounded-sm object-cover object-top scale-[0.95] rotate-[-20deg] [transform:rotateX(25deg)_rotateY(35deg)]"
               />
-            </div>
+            </div> */}
           </FeatureCard>
 
           {/* Small – Dashboard (top right) */}
@@ -142,14 +142,14 @@ export default function Home() {
             description="Centralisez vos clients et retrouvez toutes leurs informations sans friction."
             large
           >
-            <div className="relative h-full w-full overflow-hidden [perspective:1200px]">
+            {/* <div className="relative h-full w-full overflow-hidden [perspective:1200px]">
               <Image
                 src="/screenshots/clients-page.png"
                 alt="Suivie des clients"
                 fill
                 className="rounded-sm object-cover object-top scale-[0.95] rotate-[-20deg] [transform:rotateX(25deg)_rotateY(35deg)]"
               />
-            </div>
+            </div> */}
           </FeatureCard>
         </div>
       </section>
