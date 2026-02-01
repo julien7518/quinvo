@@ -81,7 +81,8 @@ export default function PrivacyPage() {
         <p className="mb-4">
           Le Service est hébergé sur l’infrastructure de Vercel. Des données
           techniques et anonymisées peuvent être collectées via Vercel Analytics
-          à des fins de mesure d’audience et d’amélioration du Service.
+          et Vercel Speed Insights à des fins de mesure d’audience et
+          d’amélioration du Service.
         </p>
 
         <h2 className="text-xl font-semibold mt-8 mb-4">

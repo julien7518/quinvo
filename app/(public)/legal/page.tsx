@@ -90,8 +90,8 @@ export default function LegalPage() {
           Cookies et mesure d’audience
         </h2>
         <p className="mb-4">
-          Le site utilise Vercel Analytics à des fins de mesure d’audience et
-          d’amélioration du service.
+          Le site utilise Vercel Analytics ainsi que Vercel Speed Insights à des
+          fins de mesure d’audience et d’amélioration du service.
         </p>
 
         <h2 className="text-xl font-semibold mt-8 mb-4">
