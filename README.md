@@ -1,6 +1,6 @@
 # Quinvo
 
-![Invoices view](screenshots/dashboard.png)
+![Invoices view](public/screenshots/dashboard.png)
 
 [quinvo-app.vercel.app](https://quinvo-app.vercel.app)
 

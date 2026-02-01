@@ -55,9 +55,11 @@ export function ClientTable() {
           address,
           client_emails(email),
           client_phones(phone),
-          notes
+          notes,
+          updated_at
         `,
       )
+      .order("updated_at", { ascending: false })
       .eq("user_id", userId);
 
     if (clientsError) {
