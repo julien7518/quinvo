@@ -18,7 +18,7 @@ import Logo from "../logo";
 
 const nav = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Clients", href: "/client", icon: Users },
+  { label: "Clients", href: "/clients", icon: Users },
   { label: "Invoices", href: "/invoices", icon: FileText },
   { label: "Settings", href: "/settings", icon: Settings },
 ];

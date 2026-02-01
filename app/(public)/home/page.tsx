@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
 import { FeatureCard } from "@/components/feature-card";
 
 const LibreBaker = Libre_Baskerville({
@@ -55,12 +54,7 @@ export default function Home() {
         <div className="relative mx-auto mt-16 max-w-5xl">
           {/* Ambient background lights */}
           <div className="pointer-events-none absolute inset-0 overflow-visible">
-            <div
-              className={cn(
-                "absolute left-1/2 top-[25%] h-30 w-5/6 -translate-x-1/2 rounded-full blur-[210px]",
-                currentTheme === "dark" ? "bg-primary/70" : "bg-primary",
-              )}
-            />
+            <div className="absolute left-1/2 top-[25%] h-30 w-5/6 -translate-x-1/2 rounded-full blur-[210px] bg-primary" />
           </div>
 
           {isThemeLoaded && dashboardImage ? (
@@ -72,8 +66,8 @@ export default function Home() {
                 <Image
                   src={dashboardImage}
                   alt="Quinvo dashboard"
-                  width={2858}
-                  height={1686}
+                  width={756}
+                  height={429}
                   priority
                   className="h-auto w-full object-cover"
                 />
