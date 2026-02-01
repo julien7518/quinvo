@@ -54,7 +54,7 @@ export default function Home() {
         <div className="relative mx-auto mt-16 max-w-5xl">
           {/* Ambient background lights */}
           <div className="pointer-events-none absolute inset-0 overflow-visible">
-            <div className="absolute left-1/2 -top-1/3 h-full w-[120%] -translate-x-1/2 bg-radial from-primary/50 to-transparent to-67%" />
+            <div className="absolute left-1/2 -top-[38%] h-[140%] w-[120%] -translate-x-1/2 bg-radial from-primary/50 to-transparent to-67%" />
           </div>
 
           {isThemeLoaded && dashboardImage ? (
