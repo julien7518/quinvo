@@ -25,8 +25,8 @@ export default function Home() {
     if (currentTheme) {
       setDashboardImage(
         currentTheme === "dark"
-          ? "/screenshots/dashboard-dark.v2.png"
-          : "/screenshots/dashboard.v2.png",
+          ? "/screenshots/dashboard-dark.png"
+          : "/screenshots/dashboard.png",
       );
       setIsThemeLoaded(true);
     }
@@ -112,7 +112,7 @@ export default function Home() {
           <FeatureCard
             title="Facturation simplifiée"
             description="Créez des factures professionnelles en quelques secondes, avec clients et suivi de statut."
-            colSpan={2}
+            large
           >
             <div className="relative h-full w-full overflow-hidden [perspective:1200px]">
               <Image
@@ -140,11 +140,11 @@ export default function Home() {
           <FeatureCard
             title="Gestion des clients"
             description="Centralisez vos clients et retrouvez toutes leurs informations sans friction."
-            colSpan={2}
+            large
           >
             <div className="relative h-full w-full overflow-hidden [perspective:1200px]">
               <Image
-                src="/screenshots/clients.png"
+                src="/screenshots/clients-page.png"
                 alt="Suivie des clients"
                 fill
                 className="rounded-sm object-cover object-top scale-[0.95] rotate-[-20deg] [transform:rotateX(25deg)_rotateY(35deg)]"

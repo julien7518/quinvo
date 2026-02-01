@@ -6,8 +6,7 @@ import { ReactNode } from "react";
 interface FeatureCardProps {
   title: string;
   description: string;
-  colSpan?: number;
-  rowSpan?: number;
+  large?: boolean;
   className?: string;
   children?: ReactNode;
 }
@@ -15,16 +14,16 @@ interface FeatureCardProps {
 export function FeatureCard({
   title,
   description,
-  colSpan,
-  rowSpan,
+  large,
   className,
   children,
 }: FeatureCardProps) {
   return (
     <div
       className={cn(
-        `relative rounded-2xl border bg-background overflow-hidden min-h-[180px] md:min-h-[210px] md:col-span-${colSpan ?? 1} md:row-span-${rowSpan ?? 1}`,
+        "relative rounded-2xl border bg-background overflow-hidden min-h-[180px] md:min-h-[210px]",
         className,
+        large ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1",
       )}
     >
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-bl from-primary/20 via-transparent to-transparent" />
