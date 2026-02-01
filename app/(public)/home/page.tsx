@@ -32,7 +32,7 @@ export default function Home() {
   }, [theme, resolvedTheme]);
 
   return (
-    <div className="mx-auto max-w-6xl px-6">
+    <div className="mx-auto overflow-x-hidden max-w-6xl px-6">
       {/* Hero */}
       <section className="mx-auto max-w-6xl md:px-6 pt-12 md:pt-24 text-center">
         <h1 className="text-3xl font-bold tracking-tight md:text-6xl">
@@ -54,7 +54,7 @@ export default function Home() {
         <div className="relative mx-auto mt-16 max-w-5xl">
           {/* Ambient background lights */}
           <div className="pointer-events-none absolute inset-0 overflow-visible">
-            <div className="absolute left-1/2 top-[25%] h-30 w-5/6 -translate-x-1/2 rounded-full blur-[210px] bg-primary" />
+            <div className="absolute left-1/2 -top-1/3 h-full w-[120%] -translate-x-1/2 bg-radial from-primary/50 to-transparent to-67%" />
           </div>
 
           {isThemeLoaded && dashboardImage ? (

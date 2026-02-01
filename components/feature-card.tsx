@@ -18,15 +18,15 @@ export function FeatureCard({
   className,
   children,
 }: FeatureCardProps) {
-  const [isMobile, setIsMdUp] = useState(false);
+  const [isMdUp, setIsMdUp] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 768px)");
-
     const handleChange = () => setIsMdUp(mediaQuery.matches);
+
     handleChange();
 
-    mediaQuery.addEventListener("change", handleChange);
+    mediaQuery.addEventListener("change", handleChange, { passive: true });
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
@@ -49,7 +49,7 @@ export function FeatureCard({
           <h3 className="font-semibold mb-2 text-xl">{title}</h3>
           <p className="text-sm text-muted-foreground flex-1">{description}</p>
         </div>
-        {isMobile && children}
+        {isMdUp && children}
       </div>
     </div>
   );
